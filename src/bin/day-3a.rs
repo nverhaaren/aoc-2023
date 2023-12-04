@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::hash::{Hash, Hasher};
 use std::io;
 use std::io::{BufRead, BufReader};
 use regex::Regex;
@@ -13,7 +14,36 @@ fn substr_index(string: &str, sub: &str) -> usize {
 }
 
 fn parse_number(s: &str) -> u32 {
-    s.parse().expect("number parse issue")
+    s.parse().expect(&format!("number parse issue {s:?}"))
+}
+
+#[derive(Copy, Clone, Debug, Eq)]
+struct Wrapper<'a> {
+    s: &'a str,
+}
+
+impl<'a> Wrapper<'a> {
+    pub fn new(s: &'a str) -> Self {
+        Self { s }
+    }
+}
+
+impl<'a> Hash for Wrapper<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.s.as_ptr().hash(state)
+    }
+}
+
+impl<'a> PartialEq for Wrapper<'a> {
+    fn eq(&self, other: &Self) -> bool {
+        self.s.as_ptr() == other.s.as_ptr()
+    }
+}
+
+impl<'a> From<Wrapper<'a>> for &'a str {
+    fn from(value: Wrapper<'a>) -> Self {
+        value.s
+    }
 }
 
 fn process_lines(lines: impl Iterator<Item=String>) -> u32 {
@@ -24,17 +54,18 @@ fn process_lines(lines: impl Iterator<Item=String>) -> u32 {
             let mut numbers = vec![];
             let mut symbols = vec![];
             for captures in re.captures_iter(line) {
-                if let Some(s) = captures.get(1) {
+                if let Some(s) = captures.get(2) {
                     numbers.push((substr_index(line.as_str(), s.as_str()), s.as_str()));
                 } else {
-                    let s = captures.get(2).expect("regex logic error");
+                    let s = captures.get(1).expect("regex logic error");
                     symbols.push(substr_index(line.as_str(), s.as_str()));
                 }
             }
             (numbers, symbols)
         })
         .collect();
-    let _ = (0..parsed_lines.len())
+    // println!("{parsed_lines:?}");
+    (0..parsed_lines.len())
         .map(|idx| {
             let (same_numbers, symbols) = &parsed_lines[idx];
             let result: (&[usize], &[(usize, &str)], &[(usize, &str)], &[(usize, &str)]) = if idx == 0 {
@@ -46,30 +77,35 @@ fn process_lines(lines: impl Iterator<Item=String>) -> u32 {
             };
             result
         })
-        .map(|(symbols, same_numbers, adj_numbers0, adj_numbers1)| {
+        .flat_map(|(symbols, same_numbers, adj_numbers0, adj_numbers1)| {
             symbols.iter()
                 .flat_map(move |&symbol_idx| same_numbers.iter()
-                    .filter_map(move |(offset, slice)| -> Option<u32> {
-                        if *offset == symbol_idx + 1 || *offset + slice.len() == symbol_idx - 1 {
-                            Some(parse_number(slice))
+                    .filter_map(move |(offset, slice)| {
+                        if *offset == symbol_idx + 1 || *offset + slice.len() == symbol_idx {
+                            Some(slice)
                         } else {
                             None
                         }
                     })
-                    .chain([0u32].iter().copied())
-                    .chain([adj_numbers0, adj_numbers1].iter().map(|x| 0u32))
-                    // .chain(adj_numbers.iter()
-                    //            .map(|x| 0u32)
-                        // .map(|v| v.iter().as_slice())
-                        // .flat_map(|x| [0u32].iter().copied())
-                    // )
+                    .chain([adj_numbers0, adj_numbers1].iter()
+                        .map(|x| x.iter())
+                        .flatten()
+                        .filter_map(|(offset, slice)| {
+                            if symbol_idx >= offset.saturating_sub(1) && symbol_idx <= offset + slice.len() {
+                                Some(slice)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<_>>()  // TODO: see about avoiding this collect
+                    )
                 )
-                // .flatten()
-        });
-        // .flatten()
-        // .collect::<HashSet<_>>()
-        // .iter().sum::<u32>()
-    0
+        })
+        .map(|x| Wrapper::new(x))
+        .collect::<HashSet<_>>().iter()
+        .map(|x| parse_number((*x).into()))
+        // .map(|x| {println!("{x}"); x})
+        .sum::<u32>()
 }
 
 fn main() {
