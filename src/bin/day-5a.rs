@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::io;
 use std::io::{BufRead, BufReader};
 use regex::Regex;
