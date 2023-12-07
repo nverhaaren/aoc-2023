@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, HashSet};
 use std::io;
 use std::io::{BufRead, BufReader};
-use itertools::Itertools;
 use regex::Regex;
 
 fn parse_number(s: &str) -> u64 {
