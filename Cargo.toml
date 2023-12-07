@@ -38,3 +38,5 @@ name = "day-5b"
 
 [[bin]]
 name = "day-6a"
+
+# 6b could be more easily solved with high-school algebra

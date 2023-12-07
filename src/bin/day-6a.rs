@@ -1,6 +1,3 @@
-use std::collections::{BTreeMap, HashSet};
-use itertools::Itertools;
-
 trait InspectVal: Sized {
     fn inspect_val(self, f: impl FnOnce(&Self) -> ()) -> Self {
         f(&self);
