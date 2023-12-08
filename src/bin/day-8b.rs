@@ -6,6 +6,7 @@ use std::str::FromStr;
 use anyhow::anyhow;
 use itertools::Itertools;
 use regex::Regex;
+use aoc_2023::check_cycle;
 
 // should really move this to lib
 #[allow(dead_code)]
@@ -89,6 +90,7 @@ fn load(mut lines: impl Iterator<Item=String>) -> (Vec<Direction>, HashMap<Node,
     (directions, map)
 }
 
+#[allow(unused)]
 fn analyze(lines: impl Iterator<Item=String>) {
     let (directions, map) = load(lines);
 
@@ -138,29 +140,33 @@ fn find_cycle(directions: &[Direction], map: &HashMap<Node, (Node, Node)>, start
     result
 }
 
-fn process_lines(mut lines: impl Iterator<Item=String>) -> u64 {
+fn wander<'a>(directions: &'a[Direction], map: &'a HashMap<Node, (Node, Node)>, start: Node) -> impl Iterator<Item=(Node, usize)> + 'a {
+    let mut current = start;
+    directions.iter().copied().enumerate().cycle()
+        .map(move |(idx, d)| {
+            let result = (current, idx);
+            current = match d {
+                Direction::Left => map.get(&current).unwrap().0,
+                Direction::Right => map.get(&current).unwrap().1,
+            };
+            result
+        })
+}
+
+fn process_lines(lines: impl Iterator<Item=String>) -> u64 {
+    // checked first billion or so naively without success
     let (directions, map) = load(lines);
 
-    let mut currents: Vec<Node> = map.keys().copied().filter(|n| n.last_a()).collect();
-    directions.iter().copied()
-        .cycle()
-        .take_while(|d| {
-            let next_nodes: Vec<Node> = currents.iter().copied().map(|node| {
-                match *d {
-                    Direction::Left => map.get(&node).copied().unwrap().0,
-                    Direction::Right => map.get(&node).copied().unwrap().1,
-                }
-            }).collect();
-            currents = next_nodes;
-            !currents.iter().all(|node| node.last_z())
+    let starts: Vec<Node> = map.keys().copied().filter(|n| n.last_a()).collect();
+    let cycles: Vec<_> = starts.iter().copied()
+        .map(|node| {
+            check_cycle(wander(&directions, &map, node)).expect("No cycle found")
         })
-        .enumerate()
-        .inspect(|(idx, _)| {
-            if idx % 1_000_000 == 0 {
-                println!("Found {idx}");
-            }
+        .inspect(|c| {
+            println!("Dist to cycle: {}, cycle len: {}", c.dist_to_cycle_start(), c.cycle().len())
         })
-        .count() as u64 + 1  // + 1 because we don't take the final step
+        .collect();
+    0
 }
 
 fn main() {
