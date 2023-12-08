@@ -31,7 +31,6 @@ impl<T> InspectVal for T {}
 struct Label(u8);
 
 impl Label {
-    #[allow(unused)]
     pub fn new(c: char) -> Self {
         c.try_into().expect(&format!("No label {c}"))
     }
@@ -60,10 +59,11 @@ impl PartialOrd for Label {
             (_, 'K') => Ordering::Less,
             ('Q', _) => Ordering::Greater,
             (_, 'Q') => Ordering::Less,
-            ('J', _) => Ordering::Greater,
-            (_, 'J') => Ordering::Less,
             ('T', _) => Ordering::Greater,
             (_, 'T') => Ordering::Less,
+            // J now at bottom
+            ('J', _) => Ordering::Less,
+            (_, 'J') => Ordering::Greater,
             (s, o) => s.cmp(&o),
         })
     }
@@ -82,14 +82,23 @@ impl Hand {
     }
 
     fn hand_type(labels: &[Label; 5]) -> HandType {
+        // Optimal strategy is to assign jokers to largest group. Having fewer groups is always
+        // better, and among the same number of groups having a larger group is always better.
+        let j = Label::new('J');
         let mut groups = HashMap::new();
         let mut max_val = 0u8;
         for label in labels {
             let val = groups.entry(*label).or_insert(0u8);
             *val += 1;
-            max_val = max_val.max(*val);
+            if *label != j {
+                max_val = max_val.max(*val);
+            }
         }
-        match groups.len() {
+        let joker_count = groups.get(&j).copied().unwrap_or_default();
+        // This increases the size of the largest group by the number of jokers
+        max_val += joker_count;
+        // And decreases the number of groups unless all or none are jokers
+        match groups.len() - (if joker_count > 0 && joker_count < 5 { 1 } else { 0 }) {
             1 => HandType::FiveOfAKind,
             2 => match max_val {
                 4 => HandType::FourOfAKind, 3 => HandType::FullHouse, _ => unreachable!()
