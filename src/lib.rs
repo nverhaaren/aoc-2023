@@ -1,6 +1,11 @@
+mod number_theory;
+
 use std::collections::HashMap;
 use std::collections::hash_map::Entry;
 use std::hash::Hash;
+
+pub use number_theory::extended_euclidean;
+pub use number_theory::chinese_remainder_theorem;
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct CycleInfo<T> {

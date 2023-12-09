@@ -1,10 +1,8 @@
-use std::cmp::Ordering;
 use std::collections::HashMap;
 use std::io;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::anyhow;
-use itertools::Itertools;
 use regex::Regex;
 
 // should really move this to lib

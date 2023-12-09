@@ -1,10 +1,8 @@
-use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 use std::io;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::anyhow;
-use itertools::Itertools;
 use regex::Regex;
 use aoc_2023::check_cycle;
 
@@ -158,14 +156,37 @@ fn process_lines(lines: impl Iterator<Item=String>) -> u64 {
     let (directions, map) = load(lines);
 
     let starts: Vec<Node> = map.keys().copied().filter(|n| n.last_a()).collect();
-    let cycles: Vec<_> = starts.iter().copied()
+    let _cycles: Vec<_> = starts.iter().copied()
         .map(|node| {
             check_cycle(wander(&directions, &map, node)).expect("No cycle found")
         })
         .inspect(|c| {
-            println!("Dist to cycle: {}, cycle len: {}", c.dist_to_cycle_start(), c.cycle().len())
+            println!(
+                "Dist to cycle: {}, cycle len: {}, possible endpoints: {}, first endpoint idx: {:?}",
+                c.dist_to_cycle_start(),
+                c.cycle().len(),
+                c.cycle().iter().filter(|(n, _)| n.last_z()).count(),
+                c.cycle().iter().enumerate().filter(|(_, (n, _))| n.last_z()).next()
+            )
         })
         .collect();
+
+    // Output:
+
+    // Dist to cycle: 2, cycle len: 21251, possible endpoints: 1, first endpoint idx: Some((21249, (Node([72, 82, 90]), 0)))
+    // Dist to cycle: 2, cycle len: 19099, possible endpoints: 1, first endpoint idx: Some((19097, (Node([84, 77, 90]), 0)))
+    // Dist to cycle: 2, cycle len: 12643, possible endpoints: 1, first endpoint idx: Some((12641, (Node([68, 71, 90]), 0)))
+    // Dist to cycle: 2, cycle len: 11567, possible endpoints: 1, first endpoint idx: Some((11565, (Node([90, 90, 90]), 0)))
+    // Dist to cycle: 2, cycle len: 14257, possible endpoints: 1, first endpoint idx: Some((14255, (Node([70, 66, 90]), 0)))
+    // Dist to cycle: 4, cycle len: 16409, possible endpoints: 1, first endpoint idx: Some((16405, (Node([74, 86, 90]), 0)))
+    // 0
+
+    // Very conveniently for all of these we land on the one endpoint after the first period of the
+    // cycle, so we land on the endpoint iff we have taken a number of steps that is a multiple of
+    // the period of the cycle. So we just need to lcm the periods.
+
+    // So I didn't need all the Chinese Remainder stuff anyway. It may be useful in the future
+    // though.
     0
 }
 
