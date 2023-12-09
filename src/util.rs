@@ -2,6 +2,10 @@ pub fn parse_number(s: &str) -> u64 {
     s.parse().expect(&format!("number parse issue {s:?}"))
 }
 
+pub fn parse_signed_number(s: &str) -> i64 {
+    s.parse().expect(&format!("number parse issue {s:?}"))
+}
+
 pub trait InspectVal: Sized {
     fn inspect_val(self, f: impl FnOnce(&Self) -> ()) -> Self {
         f(&self);
