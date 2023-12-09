@@ -41,7 +41,10 @@ fn main() -> io::Result<()> {
     let back_mapping: HashMap<String, u32> = mapping.iter()
         .map(|(k, v)| (k.chars().rev().collect(), *v))
         .collect();
+    // Collisions because of intersperse
+    #[allow(unstable_name_collisions)]
     let pattern: String = mapping.keys().map(|s| s.as_str()).intersperse("|").collect();
+    #[allow(unstable_name_collisions)]
     let back_pattern: String = back_mapping.keys().map(|s| s.as_str()).intersperse("|").collect();
     // eprintln!("{pattern}");
     // eprintln!("{back_pattern}");
