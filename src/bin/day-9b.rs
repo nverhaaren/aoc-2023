@@ -10,7 +10,7 @@ fn extrapolate_history(mut history: Vec<i64>) -> i64 {
     while !history.iter().copied().all(|x| x == 0) {
         lasts.push(history.last().copied().unwrap());
         diff.extend(
-        history.iter().copied().tuple_windows()
+            history.iter().copied().tuple_windows()
                 .map(|(a, b): (i64, i64)| {
                     b - a
                 })
@@ -29,6 +29,7 @@ fn process_lines(lines: impl Iterator<Item=String>) -> i64 {
                 .map(|s| parse_signed_number(s.as_str()))
                 .collect()
         })
+        .map(|mut v| { v.reverse(); v })
         .map(extrapolate_history)
         .sum()
 }
