@@ -4,7 +4,7 @@ use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::anyhow;
 use regex::Regex;
-use aoc_2023::check_cycle;
+use aoc_2023::graph::CycleInfo;
 
 // should really move this to lib
 #[allow(dead_code)]
@@ -158,7 +158,7 @@ fn process_lines(lines: impl Iterator<Item=String>) -> u64 {
     let starts: Vec<Node> = map.keys().copied().filter(|n| n.last_a()).collect();
     let _cycles: Vec<_> = starts.iter().copied()
         .map(|node| {
-            check_cycle(wander(&directions, &map, node)).expect("No cycle found")
+            CycleInfo::check_cycle(wander(&directions, &map, node)).expect("No cycle found")
         })
         .inspect(|c| {
             println!(
