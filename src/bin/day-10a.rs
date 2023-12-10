@@ -58,6 +58,17 @@ enum Direction {
     West,
 }
 
+impl Direction {
+    pub fn opposite(self) -> Self {
+        match self {
+            Direction::North => Direction::South,
+            Direction::South => Direction::North,
+            Direction::East => Direction::West,
+            Direction::West => Direction::East,
+        }
+    }
+}
+
 type Coordinate = (usize, usize);
 impl TryFrom<(Coordinate, Coordinate)> for Direction {
     type Error = (Coordinate, Coordinate);
@@ -105,9 +116,36 @@ fn adjacent_coordinates(c: Coordinate, rows: usize, cols: usize) -> impl Iterato
         .map(move |(row, col)| (c.0 + row - 1, c.1 + col - 1))
 }
 
+fn are_adjacent(c1: Coordinate, c2: Coordinate) -> bool {
+    if c1.0 == c2.0 {
+        c1.1.abs_diff(c2.1) == 1
+    } else if c1.1 == c2.1 {
+        c1.0.abs_diff(c2.0) == 1
+    } else {
+        false
+    }
+}
+
+fn go_direction(c: Coordinate, d: Direction) -> Option<Coordinate> {
+    match d {
+        Direction::North => if c.0 > 0 {
+            Some((c.0 - 1, c.1))
+        } else {
+            None
+        },
+        Direction::South => Some((c.0 + 1, c.1)),
+        Direction::West => if c.1 > 0 {
+            Some((c.0, c.1 - 1))
+        } else {
+            None
+        },
+        Direction::East => Some((c.0, c.1 + 1)),
+    }
+}
+
 //////
 
-fn process_lines(lines: impl Iterator<Item=String>) -> i64 {
+fn process_lines(lines: impl Iterator<Item=String>) -> u64 {
     let map: Vec<_> = lines
         .map(|line| -> Vec<Tile> {
             line.chars()
@@ -121,8 +159,36 @@ fn process_lines(lines: impl Iterator<Item=String>) -> i64 {
 
     let start = find_start(map.as_slice());
 
-    // todo: infer pipe at start
-    todo!()
+    let adjacent: Vec<_> = adjacent_coordinates(start, rows, cols)
+        .filter(|c| {
+            goes_to(map.as_slice(), *c, start)
+        })
+        .collect();
+    assert_eq!(adjacent.len(), 2, "puzzle constraint violated");
+
+    let mut last = start;
+    let mut current = adjacent[0];
+    let mut count = 2u64;
+    while current != adjacent[1] {
+        // println!("Debug: {current:?}");
+        let Tile::Pipe(pipe) = map[current.0][current.1] else {
+            panic!("Not a tile at {current:?}");
+        };
+        let (d1, d2): (Direction, Direction) = pipe.into();
+        let back: Direction = (current, last).try_into().expect("Not adjacent");
+        let forward = if back == d1 {
+            assert_ne!(back, d2);
+            d2
+        } else {
+            assert_eq!(back, d2);
+            d1
+        };
+        // println!("Debug: {forward:?}");
+        last = current;
+        current = go_direction(current, forward).expect("Out of bounds");
+        count += 1
+    }
+    count / 2 + count % 2
 }
 
 fn find_start(map: &[Vec<Tile>]) -> Coordinate {
@@ -140,6 +206,21 @@ fn find_start(map: &[Vec<Tile>]) -> Coordinate {
             None
         })
         .expect("Could not find any start point")
+}
+
+// fn infer_start(&map: &[Vec<Tile>], start_coordinate: Coordinate) -> Result<Pipe, ()> {
+//     // iter adjacent, check goes to, get two directions, get pipe
+// }
+
+fn goes_to(map: &[Vec<Tile>], source: Coordinate, dest: Coordinate) -> bool {
+    match map[source.0][source.1] {
+        Tile::Pipe(pipe) => {
+            let dirs: (Direction, Direction) = pipe.into();
+            go_direction(source, dirs.0) == Some(dest) ||
+                go_direction(source, dirs.1) == Some(dest)
+        },
+        _ => false,
+    }
 }
 
 fn main() {
