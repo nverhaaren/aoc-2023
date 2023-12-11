@@ -52,6 +52,14 @@ impl<T: Hash + Eq + Clone> CycleInfo<T> {
     }
 }
 
+pub fn taxicab_dist(c1: (isize, isize), c2: (isize, isize)) -> usize {
+    c1.0.abs_diff(c2.0) + c1.1.abs_diff(c2.1)
+}
+
+pub fn taxicab_dist_u(c1: (usize, usize), c2: (usize, usize)) -> usize {
+    c1.0.abs_diff(c2.0) + c1.1.abs_diff(c2.1)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
