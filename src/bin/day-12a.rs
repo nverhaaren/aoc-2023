@@ -5,6 +5,7 @@ use std::str::FromStr;
 use anyhow::{anyhow, bail};
 use itertools::Itertools;
 use regex::Regex;
+use aoc_2023::number_theory::count_combinations;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 enum Mark {
@@ -34,6 +35,29 @@ struct Line {
 impl Line {
     pub const fn empty() -> Self {
         Self { marks: vec![], seqs: vec![] }
+    }
+
+    pub fn count_combinations(&self) -> usize {
+        let mut broken = 0usize;
+        let mut unknown = 0usize;
+        for &m in &self.marks {
+            match m {
+                Mark::Broken => broken += 1,
+                Mark::Unknown => unknown += 1,
+                _ => (),
+            };
+        };
+        let total: usize = self.seqs.iter().sum();
+        if broken > total {
+            return 0;
+        }
+        let remaining = total - broken;
+        count_combinations(unknown as u64, remaining as u64) as usize
+    }
+
+    pub fn reverse(&mut self) {
+        self.marks.reverse();
+        self.seqs.reverse();
     }
 }
 
@@ -138,10 +162,21 @@ impl Line {
         self.seqs = new_seqs;
         return;
     }
+
+    pub fn reduce_right(&mut self) {
+        // Would have been more efficient to implement left in terms of right, not vice versa
+        self.reverse();
+        self.reduce_left();
+        self.reverse();
+    }
 }
 
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {
-    todo!()
+    lines
+        .map(|line| Line::from_str(line.as_str()).unwrap())
+        .map(|line| line.count_combinations())
+        // .inspect(|combs| println!("{combs}"))
+        .sum()
 }
 
 
@@ -177,5 +212,10 @@ mod test {
         check_does_not_reduce(Line::reduce_left, "?###???????? 3,2,1");
         // Indicates that there is only one possibility
         check_reduces_to(Line::reduce_left, "????.#...#... 4,1,1", " ");
+    }
+
+    #[test]
+    fn test_count_combinations() {
+        assert_eq!(Line::from_str("???.### 1,1,3").unwrap().count_combinations(), 3);
     }
 }

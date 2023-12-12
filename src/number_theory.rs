@@ -28,6 +28,16 @@ pub fn chinese_remainder_theorem((n_a, r_a): (i64, i64), (n_b, r_b): (i64, i64))
     (n_b * r_a * x + n_a * r_b * y).rem_euclid(r_a * r_b) as u64
 }
 
+pub fn count_combinations(n: u64, r: u64) -> u64 {
+    // From Stack Overflow
+    if r > n {
+        0
+    } else {
+        // Only one division at the end might be faster, but also more likely to overflow
+        (1..=r.min(n - r)).fold(1, |acc, val| acc * (n - val + 1) / val)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -56,5 +66,15 @@ mod test {
     #[test]
     fn test_chinese_remainder_theorem_example() {
         assert_eq!(chinese_remainder_theorem((0, 3), (3, 4)), 3);
+    }
+
+    #[test]
+    fn test_count_combinations() {
+        assert_eq!(count_combinations(3, 0), 1);
+        assert_eq!(count_combinations(3, 1), 3);
+        assert_eq!(count_combinations(5, 2), 10);
+        assert_eq!(count_combinations(5, 3), 10);
+        assert_eq!(count_combinations(0, 0), 1);
+        assert_eq!(count_combinations(1, 2), 0);
     }
 }
