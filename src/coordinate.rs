@@ -103,7 +103,7 @@ impl<const N: usize> TryFrom<ICoordinate<N>> for UCoordinate<N> {
     }
 }
 
-// TODO: is_adjacent, directions, etc
+// TODO: is_adjacent, directions, shoelace/pick, etc
 
 // More conversions
 
