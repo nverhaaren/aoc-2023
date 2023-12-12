@@ -164,9 +164,17 @@ mod test {
         assert_eq!(line, expected);
     }
 
+    fn check_does_not_reduce(f: impl FnOnce(&mut Line), line: &str) {
+        check_reduces_to(f, line, line);
+    }
+
     #[test]
     fn test_reduce_left() {
         check_reduces_to(Line::reduce_left, "???.### 1,1,3", "???.### 1,1,3");
+        check_does_not_reduce(Line::reduce_left, "??..??...?##. 1,1,3");
+        check_does_not_reduce(Line::reduce_left, "?#?#?#?#?#?#?#? 1,3,1,6");
+        check_does_not_reduce(Line::reduce_left, "????.######..#####. 1,6,5");
+        check_does_not_reduce(Line::reduce_left, "?###???????? 3,2,1");
         // Indicates that there is only one possibility
         check_reduces_to(Line::reduce_left, "????.#...#... 4,1,1", " ");
     }
