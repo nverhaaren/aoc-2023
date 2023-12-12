@@ -59,6 +59,22 @@ impl Line {
         self.marks.reverse();
         self.seqs.reverse();
     }
+
+    pub fn valid_candidate(&self) -> Result<bool, ()> {
+        let mut actual = vec![];
+        let mut broken = 0usize;
+        for m in self.marks.iter().copied() {
+            match m {
+                Mark::Works => if broken > 0 {
+                    actual.push(broken);
+                    broken = 0;
+                },
+                Mark::Broken => broken += 1,
+                Mark::Unknown => return Err(()),
+            }
+        }
+        Ok(actual == self.seqs)
+    }
 }
 
 impl FromStr for Line {
@@ -168,6 +184,101 @@ impl Line {
         self.reverse();
         self.reduce_left();
         self.reverse();
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+struct LineCombinationIter {
+    line: Line,
+    unknown_idxs: Vec<usize>,
+    current_combination: Vec<usize>,
+    combination_digit: Option<usize>,
+}
+
+impl LineCombinationIter {
+    pub fn new(line: Line) -> Self {
+        let mut broken = 0usize;
+        let unknown_idxs: Vec<_> = line.marks.iter().copied()
+            .inspect(|mark| if *mark == Mark::Broken { broken += 1; })
+            .enumerate()
+            .filter(|(idx, mark)| *mark == Mark::Unknown)
+            .map(|(idx, _)| idx)
+            .collect();
+        let required: usize = line.seqs.iter().sum();
+        if broken > required {
+            return Self {
+                line: Line::from_str(" 1").unwrap(),
+                unknown_idxs: vec![],
+                current_combination: vec![],
+                combination_digit: None,
+            }
+        }
+        let remaining = required - broken;
+        let current_combination: Vec<_> = (0..remaining).into_iter().collect();
+
+        let mut unknown = 0usize;
+        let mut new_line = line.clone();
+        for mark in new_line.marks.iter_mut() {
+            match *mark {
+                Mark::Unknown => {
+                    if unknown < remaining {
+                        *mark = Mark::Broken;
+                    } else {
+                        *mark = Mark::Works;
+                    }
+                    unknown += 1;
+                },
+                _ => (),
+            }
+        };
+        let combination_digit = if remaining == 0 {
+            None
+        } else {
+            Some(current_combination.len() - 1)
+        };
+        Self { line: new_line, unknown_idxs, current_combination, combination_digit }
+    }
+
+    pub fn advance(&mut self) -> bool {
+        let Some(mut combination_digit) = self.combination_digit else {
+            return false;
+        };
+        loop {
+            let max = self.unknown_idxs.len() - self.current_combination.len() + combination_digit;
+            let value = &mut self.current_combination[combination_digit];
+            *value += 1;
+            if *value > max {
+                if combination_digit == 0 {
+                    self.combination_digit = None;
+                    return false;
+                }
+                combination_digit -= 1;
+            } else {
+                let mut idx = combination_digit + 1;
+                let mut new_value = *value + 1;
+                while idx < self.current_combination.len() {
+                    self.current_combination[idx] = new_value;
+                    idx += 1;
+                    new_value += 1;
+                };
+                self.combination_digit.replace(combination_digit);
+                self.apply_current_combination();
+                return true;
+            }
+        }
+    }
+
+    fn apply_current_combination(&mut self) {
+        for window in self.current_combination.windows(2) {
+            assert_eq!(window.len(), 2);
+            let start = window[0];
+            let end = window[1];
+            self.line.marks[self.unknown_idxs[start]] = Mark::Broken;
+            self.line.marks[self.unknown_idxs[end]] = Mark::Broken;
+            for idx in (self.unknown_idxs[start] + 1)..(self.unknown_idxs[end]) {
+                self.line.marks[idx] = Mark::Works
+            }
+        }
     }
 }
 
