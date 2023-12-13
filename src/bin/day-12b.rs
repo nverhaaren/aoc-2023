@@ -298,18 +298,40 @@ impl Line {
     }
 
     pub fn count_valid_combinations(self) -> usize {
-        let mut comb_iter = LineCombinationIter::new(self);
-        let mut iter_count = 0usize;
-        while comb_iter.combination_digit.is_some() {
-            if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?}", comb_iter.line)) {
-                iter_count += 1;
-                // println!("Valid line: {:?}", comb_iter.line);
-            } else {
-                // println!("Invalid line: {:?}", comb_iter.line);
-            }
-            comb_iter.advance();
+        if self.seqs.len() == 0 {
+            // Maybe checks?
+            return 1;
         }
-        iter_count
+        let first = self.seqs[0];
+        let unknown_idxs: Vec<_> = self.marks.iter().copied().enumerate()
+            .take_while(|(idx, mark)| *mark != Mark::Broken)
+            .filter(|(idx, mark)| *mark == Mark::Unknown)
+            .map(|(idx, _)| idx)
+            .collect();
+        let mut result = 0usize;
+        'a: for idx in unknown_idxs {
+            for next_idx in idx..(idx + first) {
+                if next_idx >= self.marks.len() {
+                    continue 'a
+                }
+                if self.marks[next_idx] == Mark::Works {
+                    continue 'a
+                }
+            }
+            if idx + first < self.marks.len() && self.marks[idx + first] == Mark::Broken {
+                continue
+            }
+            let mut new_marks = self.marks[(idx + first)..].to_owned();
+            if !new_marks.is_empty() {
+                new_marks[0] = Mark::Works;
+            }
+            let new_line = Line {
+                marks: new_marks,
+                seqs: self.seqs[1..].to_owned(),
+            };
+            result += new_line.count_valid_combinations();
+        }
+        result
     }
 }
 
