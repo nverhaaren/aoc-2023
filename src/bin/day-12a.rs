@@ -1,10 +1,8 @@
-use std::{io, mem};
-use std::collections::HashSet;
+use std::io;
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::{anyhow, bail};
 use itertools::Itertools;
-use regex::Regex;
 use aoc_2023::number_theory::count_combinations;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
@@ -72,6 +70,9 @@ impl Line {
                 Mark::Broken => broken += 1,
                 Mark::Unknown => return Err(()),
             }
+        }
+        if broken > 0 {
+            actual.push(broken);
         }
         Ok(actual == self.seqs)
     }
@@ -232,11 +233,13 @@ impl LineCombinationIter {
             }
         };
         let combination_digit = if remaining == 0 {
-            None
+            Some(0)
         } else {
             Some(current_combination.len() - 1)
         };
-        Self { line: new_line, unknown_idxs, current_combination, combination_digit }
+        let result = Self { line: new_line, unknown_idxs, current_combination, combination_digit };
+        // println!("New: {result:?}");
+        result
     }
 
     pub fn advance(&mut self) -> bool {
@@ -245,10 +248,13 @@ impl LineCombinationIter {
         };
         loop {
             let max = self.unknown_idxs.len() - self.current_combination.len() + combination_digit;
+            // println!("max ({max}/{combination_digit}) of self: {self:?}");
             let value = &mut self.current_combination[combination_digit];
             *value += 1;
+            // println!("New value: {value}");
             if *value > max {
                 if combination_digit == 0 {
+                    // println!("No room to move at start: {:?}", self.line.marks);
                     self.combination_digit = None;
                     return false;
                 }
@@ -261,7 +267,7 @@ impl LineCombinationIter {
                     idx += 1;
                     new_value += 1;
                 };
-                self.combination_digit.replace(combination_digit);
+                self.combination_digit.replace(self.current_combination.len() - 1);
                 self.apply_current_combination();
                 return true;
             }
@@ -269,15 +275,33 @@ impl LineCombinationIter {
     }
 
     fn apply_current_combination(&mut self) {
-        for window in self.current_combination.windows(2) {
-            assert_eq!(window.len(), 2);
-            let start = window[0];
-            let end = window[1];
-            self.line.marks[self.unknown_idxs[start]] = Mark::Broken;
-            self.line.marks[self.unknown_idxs[end]] = Mark::Broken;
-            for idx in (self.unknown_idxs[start] + 1)..(self.unknown_idxs[end]) {
-                self.line.marks[idx] = Mark::Works
+        assert!(self.current_combination.len() > 0, "{self:?}");
+        if self.current_combination.len() == 1 {
+            let value = self.current_combination[0];
+            // println!("Setting broken in {:?}: {}, {}", self.line.marks, value, self.unknown_idxs[value]);
+            self.line.marks[self.unknown_idxs[value]] = Mark::Broken;
+        } else {
+            for window in self.current_combination.windows(2) {
+                assert_eq!(window.len(), 2);
+                let start = window[0];
+                let end = window[1];
+                // println!("Setting broken in {:?}: {}, {}", self.line.marks, start, self.unknown_idxs[start]);
+                // println!("Setting broken in {:?}: {}, {}", self.line.marks, end, self.unknown_idxs[end]);
+                self.line.marks[self.unknown_idxs[start]] = Mark::Broken;
+                self.line.marks[self.unknown_idxs[end]] = Mark::Broken;
+                for idx in (self.unknown_idxs[start] + 1)..(self.unknown_idxs[end]) {
+                    // println!("Setting fixed in {:?}: {}", self.line.marks, idx);
+                    self.line.marks[idx] = Mark::Works
+                }
             }
+        }
+        for idx in 0..self.current_combination[0] {
+            // println!("Setting fixed in {:?}: {} {}", self.line.marks, idx, self.unknown_idxs[idx]);
+            self.line.marks[self.unknown_idxs[idx]] = Mark::Works;
+        }
+        for idx in (self.current_combination[self.current_combination.len() - 1] + 1)..self.unknown_idxs.len() {
+            // println!("Setting fixed in {:?}: {} {}", self.line.marks, idx, self.unknown_idxs[idx]);
+            self.line.marks[self.unknown_idxs[idx]] = Mark::Works;
         }
     }
 }
@@ -328,5 +352,61 @@ mod test {
     #[test]
     fn test_count_combinations() {
         assert_eq!(Line::from_str("???.### 1,1,3").unwrap().count_combinations(), 3);
+    }
+
+    #[test]
+    fn test_line_combination_iter_new() {
+        LineCombinationIter::new("?? 1".parse().unwrap());
+        LineCombinationIter::new("? 1".parse().unwrap());
+        LineCombinationIter::new("#?.?? 2,1".parse().unwrap());
+    }
+
+    fn check_expected_combination_count(s: &str) {
+        let line: Line = s.parse().unwrap();
+        let count = line.count_combinations();
+        let mut comb_iter = LineCombinationIter::new(line);
+        let mut iter_count = 0usize;
+        while comb_iter.combination_digit.is_some() {
+            iter_count += 1;
+            // println!("{:?}", comb_iter.line.marks);
+            comb_iter.advance();
+        }
+        assert_eq!(count, iter_count, "{s}");
+    }
+
+    #[test]
+    fn test_expected_combination_count() {
+        check_expected_combination_count("?? 1");
+        check_expected_combination_count("? 1");
+        check_expected_combination_count("#?.?? 2,1");
+        check_expected_combination_count("???.### 1,1,3");
+        check_expected_combination_count(".??..??...?##. 1,1,3");
+        check_expected_combination_count("?#?#?#?#?#?#?#? 1,3,1,6");
+    }
+
+    fn check_valid_combination_count(s: &str, expected: usize) {
+        let line: Line = s.parse().unwrap();
+        let mut comb_iter = LineCombinationIter::new(line);
+        let mut iter_count = 0usize;
+        while comb_iter.combination_digit.is_some() {
+            if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?} {:?}", comb_iter.line, s)) {
+                iter_count += 1;
+                println!("Valid line: {:?}", comb_iter.line);
+            } else {
+                println!("Invalid line: {:?}", comb_iter.line);
+            }
+            comb_iter.advance();
+        }
+        assert_eq!(expected, iter_count, "{s:?}");
+    }
+
+    #[test]
+    fn test_valid_combination_count() {
+        check_valid_combination_count("?? 1", 2);
+        check_valid_combination_count("? 1", 1);
+        check_valid_combination_count("#?.?? 2,1", 2);
+        check_valid_combination_count("???.### 1,1,3", 1);
+        check_valid_combination_count(".??..??...?##. 1,1,3", 4);
+        check_valid_combination_count("?#?#?#?#?#?#?#? 1,3,1,6", 1);
     }
 }
