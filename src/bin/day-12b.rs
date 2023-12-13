@@ -239,6 +239,21 @@ impl Line {
             }
         }
     }
+
+    pub fn count_valid_combinations(self) -> usize {
+        let mut comb_iter = LineCombinationIter::new(self);
+        let mut iter_count = 0usize;
+        while comb_iter.combination_digit.is_some() {
+            if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?}", comb_iter.line)) {
+                iter_count += 1;
+                // println!("Valid line: {:?}", comb_iter.line);
+            } else {
+                // println!("Invalid line: {:?}", comb_iter.line);
+            }
+            comb_iter.advance();
+        }
+        iter_count
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -482,17 +497,7 @@ mod test {
         line.reduce_right();
         line.reduce_max_groups();
         // println!("After: {line:?}");
-        let mut comb_iter = LineCombinationIter::new(line);
-        let mut iter_count = 0usize;
-        while comb_iter.combination_digit.is_some() {
-            if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?} {:?}", comb_iter.line, s)) {
-                iter_count += 1;
-                // println!("Valid line: {:?}", comb_iter.line);
-            } else {
-                // println!("Invalid line: {:?}", comb_iter.line);
-            }
-            comb_iter.advance();
-        }
+        let iter_count = line.count_valid_combinations();
         assert_eq!(expected, iter_count, "{s:?}");
     }
 
