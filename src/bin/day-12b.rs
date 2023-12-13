@@ -465,12 +465,21 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
         //     }
         //     iter_count
         // })
-        .map(|mut line| {
+        .map(|mut line| -> usize {
             line.reduce_max_groups();
             line.reduce_left();
             line.reduce_right();
             line.reduce_max_groups();
-            line.count_combinations()
+            let groups = line.split_into_independent();
+            groups.into_iter()
+                .map(|mut line | {
+                    line.reduce_max_groups();
+                    line.reduce_left();
+                    line.reduce_right();
+                    line.reduce_max_groups();
+                    line.count_combinations()
+                })
+                .sum()
         } )
         .sum()
 }
