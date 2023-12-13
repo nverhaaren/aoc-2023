@@ -350,7 +350,11 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
         //     }
         //     iter_count
         // })
-        .map(|line| line.count_combinations())
+        .map(|mut line| {
+            // line.reduce_left();
+            // line.reduce_right();
+            line.count_combinations()
+        } )
         .sum()
 }
 

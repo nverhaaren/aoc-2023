@@ -173,11 +173,15 @@ impl Line {
 
             if any_known_broken && unknown_broken_len == self.seqs[seq_idx] {
                 mark_idx += unknown_broken_len;
-                seq_idx += 1;
+                // seq_idx += 1;
                 broken_group = unknown_broken_len;
             } else {
                 break;
             }
+        }
+        if broken_group > 0 {
+            assert_eq!(self.seqs[seq_idx], broken_group);
+            seq_idx += 1;
         }
         new_marks.extend((mark_idx..self.marks.len()).into_iter().map(|idx| {
             self.marks[idx]
@@ -324,7 +328,9 @@ impl LineCombinationIter {
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     lines
         .map(|line| Line::from_str(line.as_str()).unwrap())
-        .map(|line| {
+        .map(|mut line| {
+            line.reduce_left();
+            line.reduce_right();
             let mut comb_iter = LineCombinationIter::new(line);
             let mut iter_count = 0usize;
             while comb_iter.combination_digit.is_some() {
@@ -412,7 +418,11 @@ mod test {
     }
 
     fn check_valid_combination_count(s: &str, expected: usize) {
-        let line: Line = s.parse().unwrap();
+        let mut line: Line = s.parse().unwrap();
+        // println!("Before: {line:?}");
+        line.reduce_left();
+        // println!("After: {line:?}");
+        line.reduce_right();
         let mut comb_iter = LineCombinationIter::new(line);
         let mut iter_count = 0usize;
         while comb_iter.combination_digit.is_some() {
