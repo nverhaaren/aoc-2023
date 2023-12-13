@@ -128,8 +128,9 @@ impl Line {
                             mark_idx += 1;
                             continue;
                         }
-                        assert_eq!(self.seqs[seq_idx], broken_group);
+                        assert_eq!(self.seqs[seq_idx], broken_group, "{mark_idx} {seq_idx} {broken_group} {self:?}");
                         broken_group = 0;
+                        seq_idx += 1;
                     } else {
                         break
                     },
@@ -173,7 +174,7 @@ impl Line {
 
             if any_known_broken && unknown_broken_len == self.seqs[seq_idx] {
                 mark_idx += unknown_broken_len;
-                seq_idx += 1;
+                // seq_idx += 1;
                 broken_group = unknown_broken_len;
             } else {
                 break;
@@ -351,8 +352,8 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
         //     iter_count
         // })
         .map(|mut line| {
-            // line.reduce_left();
-            // line.reduce_right();
+            line.reduce_left();
+            line.reduce_right();
             line.count_combinations()
         } )
         .sum()
@@ -460,5 +461,6 @@ mod test {
         check_valid_combination_count("????.#...#... 4,1,1", 1);
         check_valid_combination_count("????.######..#####. 1,6,5", 4);
         check_valid_combination_count("?###???????? 3,2,1", 10);
+        check_valid_combination_count("?#?.#?##???? 3,1,4", 1);
     }
 }

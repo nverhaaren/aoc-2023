@@ -128,8 +128,9 @@ impl Line {
                             mark_idx += 1;
                             continue;
                         }
-                        assert_eq!(self.seqs[seq_idx], broken_group);
+                        assert_eq!(self.seqs[seq_idx], broken_group, "{mark_idx} {seq_idx} {broken_group} {self:?}");
                         broken_group = 0;
+                        seq_idx += 1;
                     } else {
                         break
                     },
@@ -329,7 +330,9 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     lines
         .map(|line| Line::from_str(line.as_str()).unwrap())
         .map(|mut line| {
+            // println!("Before: {line:?}");
             line.reduce_left();
+            // println!("After: {line:?}");
             line.reduce_right();
             let mut comb_iter = LineCombinationIter::new(line);
             let mut iter_count = 0usize;
@@ -448,5 +451,6 @@ mod test {
         check_valid_combination_count("????.#...#... 4,1,1", 1);
         check_valid_combination_count("????.######..#####. 1,6,5", 4);
         check_valid_combination_count("?###???????? 3,2,1", 10);
+        check_valid_combination_count("?#?.#?##???? 3,1,4", 1);
     }
 }
