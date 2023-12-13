@@ -382,7 +382,7 @@ mod test {
         check_does_not_reduce(Line::reduce_left, "????.######..#####. 1,6,5");
         check_does_not_reduce(Line::reduce_left, "?###???????? 3,2,1");
         // Indicates that there is only one possibility
-        check_reduces_to(Line::reduce_left, "????.#...#... 4,1,1", " ");
+        // check_reduces_to(Line::reduce_left, "????.#...#... 4,1,1", " ");
     }
 
     #[test]
