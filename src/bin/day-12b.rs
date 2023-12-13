@@ -176,6 +176,20 @@ impl Line {
                 mark_idx += unknown_broken_len;
                 // seq_idx += 1;
                 broken_group = unknown_broken_len;
+                continue;
+            }
+
+            // Check for pattern ???### 3,
+            let unknown_streak = (mark_idx..self.marks.len()).into_iter()
+                .take_while(|idx| self.marks[*idx] == Mark::Unknown)
+                .count();
+            let broken_streak = ((mark_idx + unknown_streak)..self.marks.len()).into_iter()
+                .take_while(|idx| self.marks[*idx] == Mark::Broken)
+                .count();
+            if broken_streak == self.seqs[seq_idx] {
+                mark_idx += unknown_streak + broken_streak;
+                // seq_idx += 1;
+                broken_group = broken_streak;
             } else {
                 break;
             }
