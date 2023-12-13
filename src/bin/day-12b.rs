@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, iter};
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::{anyhow, bail};
@@ -114,7 +114,7 @@ impl Line {
                 match mark {
                     Mark::Works => {
                         if broken_group > 0 {
-                            assert_eq!(self.seqs[seq_idx], broken_group, "{self:?}");
+                            assert_eq!(self.seqs[seq_idx], broken_group, "{mark_idx} {self:?}");
                             seq_idx += 1;
                             broken_group = 0;
                         }
@@ -123,7 +123,7 @@ impl Line {
                     },
                     Mark::Broken => broken_group += 1,
                     Mark::Unknown => if broken_group > 0 {
-                        if self.seqs[seq_idx] < broken_group {
+                        if broken_group < self.seqs[seq_idx] {
                             broken_group += 1;
                             mark_idx += 1;
                             continue;
@@ -159,12 +159,21 @@ impl Line {
 
             assert_eq!(broken_group, 0);
 
+            let mut any_known_broken = false;
             let unknown_broken_len = (mark_idx..self.marks.len()).into_iter()
-                .take_while(|idx| self.marks[*idx] == Mark::Unknown || self.marks[*idx] == Mark::Broken)
+                .take_while(|idx| {
+                    self.marks[*idx] == Mark::Unknown || if self.marks[*idx] == Mark::Broken {
+                        any_known_broken = true;
+                        true
+                    } else {
+                        false
+                    }
+                })
                 .count();
 
-            if unknown_broken_len == self.seqs[seq_idx] {
+            if any_known_broken && unknown_broken_len == self.seqs[seq_idx] {
                 mark_idx += unknown_broken_len;
+                seq_idx += 1;
                 broken_group = unknown_broken_len;
             } else {
                 break;
@@ -244,6 +253,7 @@ impl LineCombinationIter {
     }
 
     pub fn advance(&mut self) -> bool {
+        assert!(self.unknown_idxs.len() >= self.current_combination.len(), "{self:?}");
         let Some(mut combination_digit) = self.combination_digit else {
             return false;
         };
@@ -313,21 +323,34 @@ impl LineCombinationIter {
 
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     lines
-        .map(|line| Line::from_str(line.as_str()).unwrap())
-        .map(|line| {
-            let mut comb_iter = LineCombinationIter::new(line);
-            let mut iter_count = 0usize;
-            while comb_iter.combination_digit.is_some() {
-                if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?}", comb_iter.line)) {
-                    iter_count += 1;
-                    // println!("Valid line: {:?}", comb_iter.line);
-                } else {
-                    // println!("Invalid line: {:?}", comb_iter.line);
-                }
-                comb_iter.advance();
-            }
-            iter_count
+        .map(|line| -> String {
+            let (first, second) = line.split_once(' ').expect("No space");
+            let front: String = iter::repeat(first)
+                .take(5)
+                .intersperse("?")
+                .collect();
+            let back: String = iter::repeat(second)
+                .take(5)
+                .intersperse(",")
+                .collect();
+            format!("{front} {back}")
         })
+        .map(|line| Line::from_str(line.as_str()).unwrap())
+        // .map(|line| {
+        //     let mut comb_iter = LineCombinationIter::new(line);
+        //     let mut iter_count = 0usize;
+        //     while comb_iter.combination_digit.is_some() {
+        //         if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?}", comb_iter.line)) {
+        //             iter_count += 1;
+        //             // println!("Valid line: {:?}", comb_iter.line);
+        //         } else {
+        //             // println!("Invalid line: {:?}", comb_iter.line);
+        //         }
+        //         comb_iter.advance();
+        //     }
+        //     iter_count
+        // })
+        .map(|line| line.count_combinations())
         .sum()
 }
 
@@ -403,6 +426,11 @@ mod test {
 
     fn check_valid_combination_count(s: &str, expected: usize) {
         let line: Line = s.parse().unwrap();
+        let mut line: Line = s.parse().unwrap();
+        // println!("Before: {line:?}");
+        line.reduce_left();
+        // println!("After: {line:?}");
+        line.reduce_right();
         let mut comb_iter = LineCombinationIter::new(line);
         let mut iter_count = 0usize;
         while comb_iter.combination_digit.is_some() {

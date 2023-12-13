@@ -114,7 +114,7 @@ impl Line {
                 match mark {
                     Mark::Works => {
                         if broken_group > 0 {
-                            assert_eq!(self.seqs[seq_idx], broken_group, "{self:?}");
+                            assert_eq!(self.seqs[seq_idx], broken_group, "{mark_idx} {self:?}");
                             seq_idx += 1;
                             broken_group = 0;
                         }
@@ -123,7 +123,7 @@ impl Line {
                     },
                     Mark::Broken => broken_group += 1,
                     Mark::Unknown => if broken_group > 0 {
-                        if self.seqs[seq_idx] < broken_group {
+                        if broken_group < self.seqs[seq_idx] {
                             broken_group += 1;
                             mark_idx += 1;
                             continue;
@@ -159,12 +159,21 @@ impl Line {
 
             assert_eq!(broken_group, 0);
 
+            let mut any_known_broken = false;
             let unknown_broken_len = (mark_idx..self.marks.len()).into_iter()
-                .take_while(|idx| self.marks[*idx] == Mark::Unknown || self.marks[*idx] == Mark::Broken)
+                .take_while(|idx| {
+                    self.marks[*idx] == Mark::Unknown || if self.marks[*idx] == Mark::Broken {
+                        any_known_broken = true;
+                        true
+                    } else {
+                        false
+                    }
+                })
                 .count();
 
-            if unknown_broken_len == self.seqs[seq_idx] {
+            if any_known_broken && unknown_broken_len == self.seqs[seq_idx] {
                 mark_idx += unknown_broken_len;
+                seq_idx += 1;
                 broken_group = unknown_broken_len;
             } else {
                 break;
@@ -252,6 +261,7 @@ impl LineCombinationIter {
             return false;
         };
         loop {
+            assert!(self.unknown_idxs.len() >= self.current_combination.len(), "{self:?}");
             let max = self.unknown_idxs.len() - self.current_combination.len() + combination_digit;
             // println!("max ({max}/{combination_digit}) of self: {self:?}");
             let value = &mut self.current_combination[combination_digit];
