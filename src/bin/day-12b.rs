@@ -240,6 +240,63 @@ impl Line {
         }
     }
 
+    pub fn split_into_independent(mut self) -> Vec<Self> {
+        let Some(max_group) = self.seqs.iter().copied().max() else {
+            return vec![self];
+        };
+
+        let mut result = vec![];
+        let mut start = 0usize;
+        let mut seq_region = self.seqs.as_slice();
+
+        let mut found_starts = 0usize;
+        let expected_starts = seq_region.iter().copied().filter(|x| {
+            *x == max_group
+        }).count();
+
+        for idx in 0..self.marks.len() {
+            let starts_group = 'a: {
+                if idx + max_group >= self.marks.len() {
+                    break 'a false;
+                }
+                for idx_ in idx..(idx + max_group) {
+                    if self.marks[idx_] != Mark::Broken {
+                        break 'a false;
+                    }
+                }
+                true
+            };
+            if starts_group {
+                found_starts += 1;
+                let split_point = seq_region.iter().copied()
+                    .find_position(|seq| *seq == max_group)
+                    .expect("seq does not match mark group")
+                    .0;
+                let (first, mut last) = seq_region.split_at(split_point);
+                seq_region = &last[1..];
+                if idx > 0 {
+                    self.marks[idx - 1] = Mark::Works;
+                }
+                if idx > 1 {
+                    let next_marks = self.marks[start..(idx - 1)].to_owned();
+                    result.push(Line { marks: next_marks, seqs: first.to_owned() });
+                }
+                if idx + max_group < self.marks.len() {
+                    self.marks[idx + max_group] = Mark::Works;
+                }
+                start = idx + max_group + 1;
+            }
+        }
+
+        result.push(Line { marks: self.marks[start..].to_owned(), seqs: seq_region.to_owned() });
+
+        if found_starts == expected_starts {
+            result
+        } else {
+            vec![self]
+        }
+    }
+
     pub fn count_valid_combinations(self) -> usize {
         let mut comb_iter = LineCombinationIter::new(self);
         let mut iter_count = 0usize;
@@ -497,7 +554,16 @@ mod test {
         line.reduce_right();
         line.reduce_max_groups();
         // println!("After: {line:?}");
-        let iter_count = line.count_valid_combinations();
+        let groups = line.split_into_independent();
+        let iter_count: usize = groups.into_iter()
+            .map(|mut line| {
+                line.reduce_max_groups();
+                line.reduce_left();
+                line.reduce_right();
+                line.reduce_max_groups();
+                line.count_valid_combinations()
+            })
+            .product();
         assert_eq!(expected, iter_count, "{s:?}");
     }
 
@@ -513,5 +579,18 @@ mod test {
         check_valid_combination_count("????.######..#####. 1,6,5", 4);
         check_valid_combination_count("?###???????? 3,2,1", 10);
         check_valid_combination_count("?#?.#?##???? 3,1,4", 1);
+    }
+
+    #[test]
+    fn test_split_into_independent() {
+        let line: Line = ".??.?##..??.#.##? 1,2,1,2".parse().unwrap();
+        let split = line.split_into_independent();
+
+        let expected_split: Vec<Line> = vec![
+            ".??. 1".parse().unwrap(),
+            ".??.# 1".parse().unwrap(),
+            " ".parse().unwrap(),
+        ];
+        assert_eq!(expected_split, split);
     }
 }
