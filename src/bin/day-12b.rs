@@ -211,6 +211,34 @@ impl Line {
         self.reduce_left();
         self.reverse();
     }
+
+    pub fn reduce_max_groups(&mut self) {
+        let Some(max_group) = self.seqs.iter().copied().max() else {
+            return;
+        };
+
+        for idx in 0..self.marks.len() {
+            let starts_group = 'a: {
+                if idx + max_group >= self.marks.len() {
+                    break 'a false;
+                }
+                for idx_ in idx..(idx + max_group) {
+                    if self.marks[idx_] != Mark::Broken {
+                        break 'a false;
+                    }
+                }
+                true
+            };
+            if starts_group {
+                if idx > 0 {
+                    self.marks[idx - 1] = Mark::Works;
+                }
+                if idx + max_group < self.marks.len() {
+                    self.marks[idx + max_group] = Mark::Works;
+                }
+            }
+        }
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
@@ -366,8 +394,10 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
         //     iter_count
         // })
         .map(|mut line| {
+            line.reduce_max_groups();
             line.reduce_left();
             line.reduce_right();
+            line.reduce_max_groups();
             line.count_combinations()
         } )
         .sum()
@@ -447,9 +477,11 @@ mod test {
         let line: Line = s.parse().unwrap();
         let mut line: Line = s.parse().unwrap();
         // println!("Before: {line:?}");
+        line.reduce_max_groups();
         line.reduce_left();
-        // println!("After: {line:?}");
         line.reduce_right();
+        line.reduce_max_groups();
+        // println!("After: {line:?}");
         let mut comb_iter = LineCombinationIter::new(line);
         let mut iter_count = 0usize;
         while comb_iter.combination_digit.is_some() {
