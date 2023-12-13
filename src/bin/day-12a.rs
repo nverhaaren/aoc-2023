@@ -31,6 +31,7 @@ struct Line {
 }
 
 impl Line {
+    #[allow(unused)]
     pub const fn empty() -> Self {
         Self { marks: vec![], seqs: vec![] }
     }
@@ -93,7 +94,7 @@ impl FromStr for Line {
                 .map(|s| -> Result<usize, _> { s.parse() })
                 .try_collect()
                 // Questions on most idiomatic here
-                .map_err(|e| anyhow!("Could not parse int"))?
+                .map_err(|_| anyhow!("Could not parse int"))?
         };
         Ok(Self { marks, seqs })
     }
@@ -202,7 +203,7 @@ impl LineCombinationIter {
         let unknown_idxs: Vec<_> = line.marks.iter().copied()
             .inspect(|mark| if *mark == Mark::Broken { broken += 1; })
             .enumerate()
-            .filter(|(idx, mark)| *mark == Mark::Unknown)
+            .filter(|(_idx, mark)| *mark == Mark::Unknown)
             .map(|(idx, _)| idx)
             .collect();
         let required: usize = line.seqs.iter().sum();
@@ -244,6 +245,10 @@ impl LineCombinationIter {
 
     pub fn advance(&mut self) -> bool {
         let Some(mut combination_digit) = self.combination_digit else {
+            return false;
+        };
+        if self.current_combination.len() == 0 {
+            self.combination_digit = None;
             return false;
         };
         loop {
@@ -289,9 +294,9 @@ impl LineCombinationIter {
                 // println!("Setting broken in {:?}: {}, {}", self.line.marks, end, self.unknown_idxs[end]);
                 self.line.marks[self.unknown_idxs[start]] = Mark::Broken;
                 self.line.marks[self.unknown_idxs[end]] = Mark::Broken;
-                for idx in (self.unknown_idxs[start] + 1)..(self.unknown_idxs[end]) {
+                for idx in (start + 1)..(end) {
                     // println!("Setting fixed in {:?}: {}", self.line.marks, idx);
-                    self.line.marks[idx] = Mark::Works
+                    self.line.marks[self.unknown_idxs[idx]] = Mark::Works
                 }
             }
         }
@@ -309,8 +314,20 @@ impl LineCombinationIter {
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     lines
         .map(|line| Line::from_str(line.as_str()).unwrap())
-        .map(|line| line.count_combinations())
-        // .inspect(|combs| println!("{combs}"))
+        .map(|line| {
+            let mut comb_iter = LineCombinationIter::new(line);
+            let mut iter_count = 0usize;
+            while comb_iter.combination_digit.is_some() {
+                if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?}", comb_iter.line)) {
+                    iter_count += 1;
+                    // println!("Valid line: {:?}", comb_iter.line);
+                } else {
+                    // println!("Invalid line: {:?}", comb_iter.line);
+                }
+                comb_iter.advance();
+            }
+            iter_count
+        })
         .sum()
 }
 
@@ -391,9 +408,9 @@ mod test {
         while comb_iter.combination_digit.is_some() {
             if comb_iter.line.valid_candidate().expect(&format!("Candidate generation issue: {:?} {:?}", comb_iter.line, s)) {
                 iter_count += 1;
-                println!("Valid line: {:?}", comb_iter.line);
+                // println!("Valid line: {:?}", comb_iter.line);
             } else {
-                println!("Invalid line: {:?}", comb_iter.line);
+                // println!("Invalid line: {:?}", comb_iter.line);
             }
             comb_iter.advance();
         }
@@ -408,5 +425,8 @@ mod test {
         check_valid_combination_count("???.### 1,1,3", 1);
         check_valid_combination_count(".??..??...?##. 1,1,3", 4);
         check_valid_combination_count("?#?#?#?#?#?#?#? 1,3,1,6", 1);
+        check_valid_combination_count("????.#...#... 4,1,1", 1);
+        check_valid_combination_count("????.######..#####. 1,6,5", 4);
+        check_valid_combination_count("?###???????? 3,2,1", 10);
     }
 }
