@@ -1,3 +1,5 @@
+use std::iter;
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct ICoordinate<const N: usize>([isize; N]);
 
@@ -130,4 +132,20 @@ impl From<(usize, usize)> for UCoordinate<2> {
     fn from(value: (usize, usize)) -> Self {
         [value.0, value.1].into()
     }
+}
+
+pub fn transpose<T>(mut grid: Vec<Vec<T>>) -> Vec<Vec<T>> {
+    if grid.is_empty() {
+        return grid;
+    }
+    let mut new_grid: Vec<_> = iter::repeat_with(|| vec![]).take(grid[0].len()).collect();
+    while let Some(last) = grid.pop() {
+        for (idx, t) in last.into_iter().enumerate() {
+            new_grid[idx].push(t);
+        }
+    }
+    for row in new_grid.iter_mut() {
+        row.reverse();
+    }
+    new_grid
 }
