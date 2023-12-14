@@ -1,4 +1,4 @@
-use std::{io, iter};
+use std::{io, iter, mem};
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use itertools::Itertools;
@@ -19,6 +19,26 @@ fn process_lines(mut lines: impl Iterator<Item=String>) -> usize {
         })
         .sum()
 
+}
+
+fn vertical_reflection(mirror: &Mirror) -> Option<usize> {
+    let mut candidates: Vec<_> = (0..(mirror.len() - 1)).collect();
+    let mut next = vec![];
+    for row in mirror.iter() {
+        next.extend(candidates.iter().copied()
+            .filter(|x| {
+                row_could_reflect(row.as_slice(), *x)
+            })
+        );
+        mem::swap(&mut candidates, &mut next);
+        next.clear();
+    }
+    assert!(candidates.len() < 2, "{candidates:?}");
+    if candidates.len() == 1 {
+        Some(candidates[0])
+    } else {
+        None
+    }
 }
 
 fn row_could_reflect(row: &[u8], idx: usize) -> bool {
@@ -66,5 +86,22 @@ mod test {
                 .collect::<Vec<_>>(),
             vec![4, 6]
         );
+    }
+
+    #[test]
+    fn test_vertical_reflection() {
+        let mirror_str = "\
+#.##..##.
+..#.##.#.
+##......#
+##......#
+..#.##.#.
+..##..##.
+#.#.##.#.
+";
+        let mirror = load_mirror(
+            mirror_str.lines().map(|s| s.to_owned())
+        ).unwrap();
+        assert_eq!(vertical_reflection(&mirror), Some(4));
     }
 }
