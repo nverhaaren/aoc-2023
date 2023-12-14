@@ -134,7 +134,17 @@ impl From<(usize, usize)> for UCoordinate<2> {
     }
 }
 
-pub fn transpose<T>(mut grid: Vec<Vec<T>>) -> Vec<Vec<T>> {
+pub type Grid<T> = Vec<Vec<T>>;
+
+pub fn transpose_grid<T>(grid: Grid<T>) -> Grid<T> {
+    let mut rotated = rotate_grid_clockwise(grid);
+    for row in rotated.iter_mut() {
+        row.reverse();
+    }
+    rotated
+}
+
+pub fn rotate_grid_clockwise<T>(mut grid: Grid<T>) -> Grid<T> {
     if grid.is_empty() {
         return grid;
     }
@@ -144,8 +154,35 @@ pub fn transpose<T>(mut grid: Vec<Vec<T>>) -> Vec<Vec<T>> {
             new_grid[idx].push(t);
         }
     }
-    for row in new_grid.iter_mut() {
-        row.reverse();
-    }
     new_grid
+}
+
+#[cfg(test)]
+mod test_transforms {
+    use super::*;
+
+    fn simple_grid() -> Grid<i32> {
+        return vec![
+            vec![1, 2, 3],
+            vec![4, 5, 6],
+        ]
+    }
+
+    #[test]
+    fn test_transpose() {
+        assert_eq!(transpose_grid(simple_grid()), vec![
+            vec![1, 4],
+            vec![2, 5],
+            vec![3, 6],
+        ]);
+    }
+
+    #[test]
+    fn test_rotate_clockwise() {
+        assert_eq!(rotate_grid_clockwise(simple_grid()), vec![
+            vec![4, 1],
+            vec![5, 2],
+            vec![6, 3],
+        ]);
+    }
 }

@@ -1,6 +1,6 @@
 use std::io;
 use std::io::{BufRead, BufReader};
-use aoc_2023::coordinate::transpose;
+use aoc_2023::coordinate::transpose_grid;
 
 fn main() {
     let stdin = io::stdin();
@@ -13,7 +13,7 @@ fn process_lines(mut lines: impl Iterator<Item=String>) -> usize {
     let orig_grid: Vec<_> = lines
         .map(|line| line.into_bytes())
         .collect();
-    let grid = transpose(orig_grid);
+    let grid = transpose_grid(orig_grid);
     grid.iter()
         // .inspect(|_| println!("Line"))
         .map(|r| r.as_slice())
