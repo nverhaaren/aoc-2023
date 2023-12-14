@@ -54,13 +54,16 @@ fn roll_boulders_column(grid: &mut Grid<u8>, col_idx: usize) {
                 grid[row_idx][col_idx] = '.' as u8;
             },
             '#' => {
-                for backfill_idx in row_idx..(row_idx + boulder_count) {
+                for backfill_idx in (row_idx + 1)..(row_idx + 1 + boulder_count) {
                     grid[backfill_idx][col_idx] = 'O' as u8;
                 }
                 boulder_count = 0;
             },
             _ => panic!("Invalid character: {:?}", grid[row_idx][col_idx]),
         }
+    }
+    for backfill_idx in 1..(1 + boulder_count) {
+        grid[backfill_idx][col_idx] = 'O' as u8;
     }
 }
 
