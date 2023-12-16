@@ -1,11 +1,37 @@
 use std::iter;
+use std::ops::{Bound, RangeBounds};
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
+pub enum Direction {
+    North,
+    East,
+    South,
+    West,
+}
+
+impl From<Direction> for ICoordinate<2> {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::North => ICoordinate([-1, 0]),
+            Direction::East => ICoordinate([0, 1]),
+            Direction::South => ICoordinate([1, 0]),
+            Direction::West => ICoordinate([0, -1]),
+        }
+    }
+}
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct ICoordinate<const N: usize>([isize; N]);
 
 impl<const N: usize> ICoordinate<N> {
     pub const fn new(data: [isize; N]) -> Self {
+        assert!(N > 0);
         Self(data)
+    }
+
+    pub const fn origin() -> Self {
+        assert!(N > 0);
+        Self([0; N])
     }
 
     pub fn taxicab_dist(&self, other: &Self) -> usize {
@@ -13,6 +39,55 @@ impl<const N: usize> ICoordinate<N> {
             .zip(other.0.iter().copied())
             .map(|(a, b)| a.abs_diff(b))
             .sum()
+    }
+
+    pub fn king_dist(&self, other: &Self) -> usize {
+        // In 2D this is number of moves for a chess king to get from self to other
+        self.0.iter().copied()
+            .zip(other.0.iter().copied())
+            .map(|(a, b)| a.abs_diff(b))
+            .max().expect("Invariant violated")
+    }
+
+    /// Requires that the range contain at least one element - if so returns Ok(new value), or else
+    /// returns Err(existing value)
+    pub fn bound_axis(&mut self, axis: usize, bound: impl RangeBounds<isize>) -> Result<isize, isize> {
+        let target = &mut self.0[axis];
+        let start = match bound.start_bound() {
+            Bound::Excluded(s) => Bound::Included(s.checked_add(1).ok_or(*target)?),
+            b => b.cloned(),
+        };
+        let end = match bound.end_bound() {
+            Bound::Excluded(e) => Bound::Included(e.checked_sub(1).ok_or(*target)?),
+            b => b.cloned(),
+        };
+        match (start, end) {
+            (Bound::Included(s), Bound::Included(e)) => if e < s {
+                return Err(*target);
+            },
+            _ => (),
+        };
+        match start {
+            Bound::Excluded(_) => unreachable!(),
+            Bound::Included(s) => if *target < s {
+                *target = s;
+            },
+            Bound::Unbounded => (),
+        };
+        match end {
+            Bound::Excluded(_) => unreachable!(),
+            Bound::Included(s) => if *target < s {
+                *target = s;
+            },
+            Bound::Unbounded => (),
+        };
+        Ok(*target)
+    }
+}
+
+impl<const N: usize> Default for ICoordinate<N> {
+    fn default() -> Self {
+        Self::origin()
     }
 }
 
@@ -46,7 +121,13 @@ pub struct UCoordinate<const N: usize>([usize; N]);
 
 impl<const N: usize> UCoordinate<N> {
     pub fn new(data: [usize; N]) -> Self {
+        assert!(N > 0);
         Self(data)
+    }
+
+    pub const fn origin() -> Self {
+        assert!(N > 0);
+        Self([0; N])
     }
 
     pub fn taxicab_dist(&self, other: &Self) -> usize {
@@ -54,6 +135,55 @@ impl<const N: usize> UCoordinate<N> {
             .zip(other.0.iter().copied())
             .map(|(a, b)| a.abs_diff(b))
             .sum()
+    }
+
+    pub fn king_dist(&self, other: &Self) -> usize {
+        // In 2D this is number of moves for a chess king to get from self to other
+        self.0.iter().copied()
+            .zip(other.0.iter().copied())
+            .map(|(a, b)| a.abs_diff(b))
+            .max().expect("Invariant violated")
+    }
+
+    /// Requires that the range contain at least one element - if so returns Ok(new value), or else
+    /// returns Err(existing value)
+    pub fn bound_axis(&mut self, axis: usize, bound: impl RangeBounds<usize>) -> Result<usize, usize> {
+        let target = &mut self.0[axis];
+        let start = match bound.start_bound() {
+            Bound::Excluded(s) => Bound::Included(s.checked_add(1).ok_or(*target)?),
+            b => b.cloned(),
+        };
+        let end = match bound.end_bound() {
+            Bound::Excluded(e) => Bound::Included(e.checked_sub(1).ok_or(*target)?),
+            b => b.cloned(),
+        };
+        match (start, end) {
+            (Bound::Included(s), Bound::Included(e)) => if e < s {
+                return Err(*target);
+            },
+            _ => (),
+        };
+        match start {
+            Bound::Excluded(_) => unreachable!(),
+            Bound::Included(s) => if *target < s {
+                *target = s;
+            },
+            Bound::Unbounded => (),
+        };
+        match end {
+            Bound::Excluded(_) => unreachable!(),
+            Bound::Included(s) => if *target < s {
+                *target = s;
+            },
+            Bound::Unbounded => (),
+        };
+        Ok(*target)
+    }
+}
+
+impl<const N: usize> Default for UCoordinate<N> {
+    fn default() -> Self {
+        Self::origin()
     }
 }
 
@@ -105,7 +235,9 @@ impl<const N: usize> TryFrom<ICoordinate<N>> for UCoordinate<N> {
     }
 }
 
-// TODO: is_adjacent, directions, shoelace/pick, etc
+// impl UCoordinate<2>
+
+// TODO: is_adjacent, shoelace/pick, etc
 
 // More conversions
 
@@ -133,6 +265,8 @@ impl From<(usize, usize)> for UCoordinate<2> {
         [value.0, value.1].into()
     }
 }
+
+// Grid
 
 pub type Grid<T> = Vec<Vec<T>>;
 
