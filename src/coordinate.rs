@@ -1,5 +1,6 @@
 use std::iter;
-use std::ops::{Bound, RangeBounds};
+use std::ops::{Add, Bound, RangeBounds};
+use crate::util::CheckedAdd;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum Direction {
@@ -235,7 +236,31 @@ impl<const N: usize> TryFrom<ICoordinate<N>> for UCoordinate<N> {
     }
 }
 
-// impl UCoordinate<2>
+impl Add<Direction> for UCoordinate<2> {
+    type Output = UCoordinate<2>;
+    fn add(self, rhs: Direction) -> Self::Output {
+        let [row, col] = self.0;
+        match rhs {
+            Direction::North => Self([row - 1, col]),
+            Direction::East => Self([row, col + 1]),
+            Direction::South => Self([row + 1, col]),
+            Direction::West => Self([row, col - 1]),
+        }
+    }
+}
+
+impl CheckedAdd<Direction> for UCoordinate<2> {
+    fn checked_add(&self, v: &Direction) -> Option<Self::Output> {
+        let [row, col] = self.0;
+        let v = *v;
+        Some(match v {
+            Direction::North => Self([row.checked_sub(1)?, col]),
+            Direction::East => Self([row, col.checked_add(1)?]),
+            Direction::South => Self([row.checked_add(1)?, col]),
+            Direction::West => Self([row, col.checked_sub(1)?]),
+        })
+    }
+}
 
 // TODO: is_adjacent, shoelace/pick, etc
 

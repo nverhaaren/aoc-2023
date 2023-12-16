@@ -1,3 +1,5 @@
+use std::ops::Add;
+
 pub fn parse_number(s: &str) -> u64 {
     s.parse().expect(&format!("number parse issue {s:?}"))
 }
@@ -20,4 +22,6 @@ pub trait InspectVal: Sized {
 
 impl<T> InspectVal for T {}
 
-
+pub trait CheckedAdd<U>: Add<U> {
+    fn checked_add(&self, v: &U) -> Option<Self::Output>;
+}
