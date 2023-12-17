@@ -1,7 +1,6 @@
 use std::{io, iter, mem};
 use std::io::{BufRead, BufReader};
-use itertools::Itertools;
-use aoc_2023::coordinate::{Grid, rotate_grid_clockwise};
+use aoc_2023::coordinate::Grid;
 use aoc_2023::graph::CycleInfo;
 
 fn main() {
@@ -11,19 +10,11 @@ fn main() {
         .map(|s| s.expect("unicode issue"))))
 }
 
-#[allow(unused)]
-fn display_grid(grid: &Grid<u8>) -> String {
-    #[allow(unstable_name_collisions)]
-    grid.iter()
-        .map(|x| String::from_utf8(x.clone()).expect("utf-8 error"))
-        .intersperse("\n".to_owned())
-        .collect()
-}
-
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     let orig_grid: Vec<_> = lines
         .map(|line| line.into_bytes())
         .collect();
+    let orig_grid = Grid::try_from_vec_of_vecs(orig_grid).expect("Irregular input");
 
     // let one_spin = rotate_grid_clockwise(
     //     spin_forever(orig_grid.clone()).take(4).last().unwrap()
@@ -45,7 +36,7 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     let mut grid = cycle_info.cycle()[idx_within_cycle].clone();
     let needed_rotations = 4 - (first_idx % 4);
     assert_eq!(needed_rotations, 1);
-    grid = rotate_grid_clockwise(grid);
+    grid = grid.rotate_clockwise();
 
     // for (check_idx, mut check_grid) in cycle_info.cycle().iter().cloned().enumerate() {
     //     check_grid = rotate_grid_clockwise(check_grid);
@@ -61,10 +52,11 @@ fn spin_forever(mut grid: Grid<u8>) -> impl Iterator<Item=Grid<u8>> {
         roll_boulders(&mut grid);
         let clone = grid.clone();
         // Can't move grid directly because it's captured by a closure
-        let mut tmp = vec![];
+        // This became less performant after improved grid...
+        let mut tmp = Grid::full(1, 1, 0);
         mem::swap(&mut tmp, &mut grid);
         // I guess the idea is this method could panic and that panic could be caught
-        grid = rotate_grid_clockwise(tmp);
+        grid = tmp.rotate_clockwise();
         Some(clone)
     })
 }
@@ -77,7 +69,7 @@ fn roll_boulders(grid: &mut Grid<u8>) {
 
 fn roll_boulders_column(grid: &mut Grid<u8>, col_idx: usize) {
     let mut boulder_count = 0usize;
-    for row_idx in (0..grid.len()).rev() {
+    for row_idx in (0..grid.rows()).rev() {
         match grid[row_idx][col_idx] as char {
             '.' => (),
             'O' => {
@@ -100,10 +92,10 @@ fn roll_boulders_column(grid: &mut Grid<u8>, col_idx: usize) {
 
 fn north_load(grid: &Grid<u8>) -> usize {
     let mut load = 0usize;
-    for (idx, row) in grid.iter().enumerate() {
+    for (idx, row) in grid.iter_rows().enumerate() {
         for c in row.iter().copied() {
             match c as char {
-                'O' => load += grid.len() - idx,
+                'O' => load += grid.rows() - idx,
                 _ => (),
             }
         }

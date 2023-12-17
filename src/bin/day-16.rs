@@ -1,4 +1,4 @@
-use std::{io, iter, mem};
+use std::{io, mem};
 use std::collections::VecDeque;
 use std::fmt::{Display, Formatter, Write};
 use std::io::{BufRead, BufReader};
@@ -12,8 +12,9 @@ fn main() {
     let lines: Vec<_> = reader.lines()
         .map(|x| x.map(|s| s.into_bytes()))
         .try_collect().expect("Unicode issue");
-    println!("First part: {}", part_1(&lines));
-    println!("Second part: {}", part_2(&lines));
+    let grid = Grid::try_from_vec_of_vecs(lines).expect("Irregular input");
+    println!("First part: {}", part_1(&grid));
+    println!("Second part: {}", part_2(&grid));
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Default)]
@@ -55,19 +56,16 @@ impl Visited {
     }
 }
 
-fn get_entry_point_energy(lines: &Vec<Vec<u8>>, coordinate: UCoordinate<2>, direction: Direction) -> usize {
-    let mut progress: Vec<_> = iter::repeat_with(|| vec![Visited::new(); lines[0].len()])
-        .take(lines.len())
-        .collect();
+fn get_entry_point_energy(grid: &Grid<u8>, coordinate: UCoordinate<2>, direction: Direction) -> usize {
+    let mut progress = Grid::full(grid.rows(), grid.cols(), Visited::new());
 
     // Could have just been a Vec
     let mut operations = VecDeque::new();
     operations.push_back((coordinate, direction));
 
     while let Some((coordinate, direction)) = operations.pop_front() {
-        let (row, col): (usize, usize) = coordinate.into();
-        let visited = &mut progress[row][col];
-        let c = lines[row][col] as char;
+        let visited = &mut progress[coordinate];
+        let c = grid[coordinate] as char;
         let is_mirror = c == '/' || c == '\\';
         match direction {
             Direction::North | Direction::South => if visited.visit_col() && !is_mirror {
@@ -82,8 +80,7 @@ fn get_entry_point_energy(lines: &Vec<Vec<u8>>, coordinate: UCoordinate<2>, dire
             let Some(mut next) = coordinate.checked_add(&dir) else {
                 return;
             };
-            next.bound_axis(0, 0..lines.len()).expect("logic error");
-            next.bound_axis(1, 0..lines[0].len()).expect("logic error");
+            grid.bound_coordinate(&mut next);
             if next != coordinate {
                 // println!("{coordinate:?} -> ({dir:?}) {next:?}");
                 operations.push_back((next, dir));
@@ -117,20 +114,20 @@ fn get_entry_point_energy(lines: &Vec<Vec<u8>>, coordinate: UCoordinate<2>, dire
         add_operation(new_direction);
     }
     // print_grid(&progress);
-    progress.iter()
+    progress.iter_rows()
         .flat_map(|row| row.iter().copied())
-        .filter(|v| (*v).visited())
+        .filter(|v| v.visited())
         .count()
 }
 
-fn part_1(lines: &Vec<Vec<u8>>) -> usize {
-    get_entry_point_energy(lines, UCoordinate::origin(), Direction::East)
+fn part_1(grid: &Grid<u8>) -> usize {
+    get_entry_point_energy(grid, UCoordinate::origin(), Direction::East)
 }
 
-fn part_2(lines: &Grid<u8>) -> usize {
-    possible_entry_points(lines.len(), lines[0].len())
+fn part_2(grid: &Grid<u8>) -> usize {
+    possible_entry_points(grid.rows(), grid.cols())
         .map(|(coordinate, direction)| {
-            get_entry_point_energy(lines, coordinate, direction)
+            get_entry_point_energy(grid, coordinate, direction)
         })
         .max().unwrap()
 }
@@ -147,16 +144,6 @@ fn possible_entry_points(rows: usize, cols: usize) -> impl Iterator<Item=(UCoord
         .chain((0..cols).into_iter()
             .map(move |col| ((rows - 1, col).into(), Direction::North))
         )
-}
-
-#[allow(unused)]
-fn print_grid<T: Display>(grid: &Grid<T>) {
-    for row in grid.iter() {
-        for cell in row.iter() {
-            print!("{cell}");
-        }
-        println!();
-    }
 }
 
 #[cfg(test)]

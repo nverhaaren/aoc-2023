@@ -1,6 +1,6 @@
 use std::io;
 use std::io::{BufRead, BufReader};
-use aoc_2023::coordinate::transpose_grid;
+use aoc_2023::coordinate::Grid;
 
 fn main() {
     let stdin = io::stdin();
@@ -13,10 +13,10 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     let orig_grid: Vec<_> = lines
         .map(|line| line.into_bytes())
         .collect();
-    let grid = transpose_grid(orig_grid);
-    grid.iter()
+    let orig_grid = Grid::try_from_vec_of_vecs(orig_grid).expect("Irregular input");
+    let grid = orig_grid.transpose();
+    grid.iter_rows()
         // .inspect(|_| println!("Line"))
-        .map(|r| r.as_slice())
         .map(row_load)
         .sum()
 }
