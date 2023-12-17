@@ -24,6 +24,19 @@ impl From<Direction> for ICoordinate<2> {
 }
 
 impl Direction {
+    pub const ALL: [Direction; 4] =
+        [Direction::North, Direction::East, Direction::South, Direction::West];
+
+
+    pub const fn opposite(self) -> Self {
+        match self {
+            Direction::North => Direction::South,
+            Direction::East => Direction::West,
+            Direction::South => Direction::North,
+            Direction::West => Direction::East,
+        }
+    }
+
     pub const fn reflect_over_row(self) -> Self {
         match self {
             Direction::North => Direction::South,
@@ -443,15 +456,23 @@ impl<T> Grid<T> {
 
     // iter_cols_mut if needed
 
-    pub fn bound_coordinate(&self, coordinate: &mut UCoordinate<2>) {
+    pub fn bound_coordinate<'a>(&self, coordinate: &'a mut UCoordinate<2>) -> &'a mut UCoordinate<2> {
         coordinate.bound_axis(0, 0..self.rows()).expect("logic error");
         coordinate.bound_axis(1, 0..self.cols()).expect("logic error");
+        coordinate
     }
 
     pub fn bounded_add(&self, coordinate: &UCoordinate<2>, direction: Direction) -> UCoordinate<2> {
         let mut result = coordinate.checked_add(&direction).unwrap_or(*coordinate);
         self.bound_coordinate(&mut result);
         result
+    }
+
+    pub fn neighbors<'a>(&'a self, coordinate: &UCoordinate<2>) -> impl Iterator<Item=(Direction, UCoordinate<2>)> + 'a {
+        let coordinate = *coordinate;
+        Direction::ALL.iter().copied()
+            .map(move |d| (d, self.bounded_add(&coordinate, d)))
+            .filter(move |(_d, n)| n != &coordinate)
     }
 
     pub fn rotate_clockwise(self) -> Self {
