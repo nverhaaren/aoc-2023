@@ -58,6 +58,7 @@ enum Direction {
     West,
 }
 
+#[allow(unused)]
 impl Direction {
     pub fn opposite(self) -> Self {
         match self {
@@ -116,6 +117,7 @@ fn adjacent_coordinates(c: Coordinate, rows: usize, cols: usize) -> impl Iterato
         .map(move |(row, col)| (c.0 + row - 1, c.1 + col - 1))
 }
 
+#[allow(dead_code)]
 fn are_adjacent(c1: Coordinate, c2: Coordinate) -> bool {
     if c1.0 == c2.0 {
         c1.1.abs_diff(c2.1) == 1

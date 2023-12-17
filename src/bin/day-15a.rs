@@ -1,6 +1,5 @@
 use std::io;
-use std::io::{BufRead, Read};
-use itertools::Itertools;
+use std::io::{Read};
 
 fn main() {
     let mut stdin = io::stdin();

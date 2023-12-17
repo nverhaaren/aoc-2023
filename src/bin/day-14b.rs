@@ -13,13 +13,14 @@ fn main() {
 
 #[allow(unused)]
 fn display_grid(grid: &Grid<u8>) -> String {
+    #[allow(unstable_name_collisions)]
     grid.iter()
         .map(|x| String::from_utf8(x.clone()).expect("utf-8 error"))
         .intersperse("\n".to_owned())
         .collect()
 }
 
-fn process_lines(mut lines: impl Iterator<Item=String>) -> usize {
+fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     let orig_grid: Vec<_> = lines
         .map(|line| line.into_bytes())
         .collect();
