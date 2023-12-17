@@ -1,7 +1,7 @@
-use std::{io, mem};
+use std::{io};
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
-use regex::Regex;
+
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 enum Tile {

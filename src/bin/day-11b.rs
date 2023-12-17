@@ -1,8 +1,8 @@
-use std::{io, mem};
+use std::{io};
 use std::collections::HashSet;
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
-use regex::Regex;
+
 use aoc_2023::graph::taxicab_dist_u;
 
 fn process_lines(lines: impl Iterator<Item=String>) -> usize {

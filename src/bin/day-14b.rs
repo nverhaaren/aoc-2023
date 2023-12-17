@@ -11,6 +11,7 @@ fn main() {
         .map(|s| s.expect("unicode issue"))))
 }
 
+#[allow(unused)]
 fn display_grid(grid: &Grid<u8>) -> String {
     grid.iter()
         .map(|x| String::from_utf8(x.clone()).expect("utf-8 error"))
