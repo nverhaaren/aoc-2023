@@ -13,6 +13,7 @@ fn main() {
         .map(|x| x.map(|s| s.into_bytes()))
         .try_collect().expect("Unicode issue");
     println!("First part: {}", part_1(&lines));
+    println!("Second part: {}", part_2(&lines));
 }
 
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Hash, Default)]
@@ -54,13 +55,14 @@ impl Visited {
     }
 }
 
-fn part_1(lines: &Vec<Vec<u8>>) -> usize {
+fn get_entry_point_energy(lines: &Vec<Vec<u8>>, coordinate: UCoordinate<2>, direction: Direction) -> usize {
     let mut progress: Vec<_> = iter::repeat_with(|| vec![Visited::new(); lines[0].len()])
         .take(lines.len())
         .collect();
 
+    // Could have just been a Vec
     let mut operations = VecDeque::new();
-    operations.push_back((UCoordinate::<2>::origin(), Direction::East));
+    operations.push_back((coordinate, direction));
 
     while let Some((coordinate, direction)) = operations.pop_front() {
         let (row, col): (usize, usize) = coordinate.into();
@@ -119,6 +121,32 @@ fn part_1(lines: &Vec<Vec<u8>>) -> usize {
         .flat_map(|row| row.iter().copied())
         .filter(|v| (*v).visited())
         .count()
+}
+
+fn part_1(lines: &Vec<Vec<u8>>) -> usize {
+    get_entry_point_energy(lines, UCoordinate::origin(), Direction::East)
+}
+
+fn part_2(lines: &Grid<u8>) -> usize {
+    possible_entry_points(lines.len(), lines[0].len())
+        .map(|(coordinate, direction)| {
+            get_entry_point_energy(lines, coordinate, direction)
+        })
+        .max().unwrap()
+}
+
+fn possible_entry_points(rows: usize, cols: usize) -> impl Iterator<Item=(UCoordinate<2>, Direction)> {
+    (0..rows).into_iter()
+        .map(move |row| ((row, 0).into(), Direction::East))
+        .chain((0..rows).into_iter()
+            .map(move |row| ((row, cols - 1).into(), Direction::West))
+        )
+        .chain((0..cols).into_iter()
+            .map(move |col| ((0, col).into(), Direction::South))
+        )
+        .chain((0..cols).into_iter()
+            .map(move |col| ((rows - 1, col).into(), Direction::North))
+        )
 }
 
 #[allow(unused)]
