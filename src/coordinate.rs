@@ -21,6 +21,60 @@ impl From<Direction> for ICoordinate<2> {
     }
 }
 
+impl Direction {
+    pub const fn reflect_over_row(self) -> Self {
+        match self {
+            Direction::North => Direction::South,
+            Direction::South => Direction::North,
+            _ => self,
+        }
+    }
+
+    pub const fn reflect_over_col(self) -> Self {
+        match self {
+            Direction::East => Direction::West,
+            Direction::West => Direction::East,
+            _ => self,
+        }
+    }
+
+    pub const fn transpose(self) -> Self {
+        match self {
+            Direction::North => Direction::West,
+            Direction::East => Direction::South,
+            Direction::South => Direction::East,
+            Direction::West => Direction::North,
+        }
+    }
+
+    pub const fn transpose_secondary(self) -> Self {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::North,
+            Direction::South => Direction::West,
+            Direction::West => Direction::South,
+        }
+    }
+
+    pub const fn rotate_clockwise(self) -> Self {
+        match self {
+            Direction::North => Direction::East,
+            Direction::East => Direction::South,
+            Direction::South => Direction::West,
+            Direction::West => Direction::North,
+        }
+    }
+
+    pub const fn rotate_counter_clockwise(self) -> Self {
+        match self {
+            Direction::North => Direction::West,
+            Direction::East => Direction::North,
+            Direction::South => Direction::East,
+            Direction::West => Direction::South,
+        }
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 pub struct ICoordinate<const N: usize>([isize; N]);
 
@@ -77,8 +131,8 @@ impl<const N: usize> ICoordinate<N> {
         };
         match end {
             Bound::Excluded(_) => unreachable!(),
-            Bound::Included(s) => if *target < s {
-                *target = s;
+            Bound::Included(e) => if *target > e {
+                *target = e;
             },
             Bound::Unbounded => (),
         };
@@ -173,8 +227,8 @@ impl<const N: usize> UCoordinate<N> {
         };
         match end {
             Bound::Excluded(_) => unreachable!(),
-            Bound::Included(s) => if *target < s {
-                *target = s;
+            Bound::Included(e) => if *target > e {
+                *target = e;
             },
             Bound::Unbounded => (),
         };
