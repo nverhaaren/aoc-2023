@@ -9,7 +9,7 @@ fn main() {
         .map(|s| s.expect("unicode issue"))))
 }
 
-fn process_lines(mut lines: impl Iterator<Item=String>) -> usize {
+fn process_lines(lines: impl Iterator<Item=String>) -> usize {
     let orig_grid: Vec<_> = lines
         .map(|line| line.into_bytes())
         .collect();
@@ -43,7 +43,7 @@ fn row_load(row: &[u8]) -> usize {
     }
     if round_count > 0 {
         collection_points.push((anchor, round_count));
-        round_count = 0;
+        // round_count = 0;
     }
     collection_points.into_iter()
         .map(|(anchor, count)| -> usize {

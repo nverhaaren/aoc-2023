@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::io;
-use std::io::{BufRead, Read};
+use std::io::Read;
 use itertools::Itertools;
 
 fn main() {

@@ -1,7 +1,7 @@
 use std::{io, iter, mem};
 use std::io::{BufRead, BufReader};
-use std::str::FromStr;
-use itertools::Itertools;
+
+
 
 fn main() {
     let stdin = io::stdin();
@@ -108,7 +108,7 @@ fn col_could_reflect(mirror: &Mirror, idx_of_col: usize, idx: usize) -> bool {
     true
 }
 
-fn load_mirror(mut lines: impl Iterator<Item=String>) -> Option<Mirror> {
+fn load_mirror(lines: impl Iterator<Item=String>) -> Option<Mirror> {
     let result: Vec<_> = lines
         .take_while(|line| !line.is_empty())
         .map(|line| line.into_bytes())

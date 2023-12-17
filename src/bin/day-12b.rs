@@ -1,3 +1,7 @@
+// Incomplete, so...
+// Also intersperse unstable_name_collisions for now
+#![allow(dead_code, unstable_name_collisions)]
+
 use std::{io, iter};
 use std::io::{BufRead, BufReader};
 use std::str::FromStr;
