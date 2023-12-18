@@ -186,6 +186,17 @@ impl<const N: usize> AsMut<[isize; N]> for ICoordinate<N> {
     }
 }
 
+impl<const N: usize> Add<ICoordinate<N>> for ICoordinate<N> {
+    type Output = Self;
+    fn add(self, rhs: ICoordinate<N>) -> Self::Output {
+        let mut result = self.0.clone();
+        for (target, to_add) in result.iter_mut().zip_eq(rhs.0.iter().copied()) {
+            *target += to_add;
+        }
+        Self(result)
+    }
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash)]
 
 pub struct UCoordinate<const N: usize>([usize; N]);
@@ -372,6 +383,19 @@ impl CheckedAdd<Direction> for UCoordinate<2> {
             Direction::West => Self([row, col.checked_sub(1)?]),
         })
     }
+}
+
+pub fn twice_shoelace(it: impl Iterator<Item=ICoordinate<2>> + Clone + ExactSizeIterator) -> usize {
+    // TODO: without using circular windows I suspect I can relax these bounds - have a single
+    // iteration cover shoelace, boundary, and pick?
+    it.circular_tuple_windows::<(_, _)>()
+        .map(|(a, b)| {
+            let a: (_, _) = a.into();
+            let b: (_, _) = b.into();
+            a.0 * b.1 - b.0 * a.1
+        })
+        .sum::<isize>()
+        .abs() as usize
 }
 
 // TODO: is_adjacent, shoelace/pick, etc
