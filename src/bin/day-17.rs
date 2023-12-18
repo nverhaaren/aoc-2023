@@ -42,8 +42,9 @@ impl PathState {
 
     pub fn origin_state_b() -> Self {
         Self([
-            ((Direction::South, 4), 0),
-            ((Direction::East, 4), 0),
+            // South and east allowed turns immediately after the start; this forbids them
+            ((Direction::North, 4), 0),
+            ((Direction::West, 4), 0),
         ].iter().copied().collect())
     }
 
@@ -53,7 +54,10 @@ impl PathState {
 
     pub fn min_heat_loss_b(&self) -> usize {
         self.0.iter()
-            .filter(|((_, streak), _)| *streak >= MIN_STREAK_B)
+            .filter(|((_, streak), _)| {
+                assert!(*streak <= MAX_STREAK_B);
+                *streak >= MIN_STREAK_B
+            })
             .map(|(_, loss)| *loss)
             .min()
             .unwrap_or(usize::MAX)
@@ -92,7 +96,7 @@ impl PathState {
         let mut min_loss_from_other_directions = usize::MAX;
         for (&(streak_direction, _streak), &loss) in self.0.iter() {
             let loss = loss + jump_loss;
-            if towards == streak_direction.opposite() { // Problem statement
+            if towards == streak_direction.opposite() || towards == streak_direction { // Problem statement?
                 continue;
             }
             if towards != streak_direction {
@@ -134,6 +138,7 @@ impl PathState {
     pub fn update_state(&mut self, direction: Direction, relevant_losses: &[(usize, usize)]) -> bool {
         let mut updated = false;
         for (streak, loss) in relevant_losses.iter().copied() {
+            assert!(streak <= MAX_STREAK_B);
             let best_loss = self.0.entry((direction, streak))
                 .or_insert(usize::MAX);
             if loss >= *best_loss {
