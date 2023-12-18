@@ -1,8 +1,9 @@
 use std::fmt::{Display, Formatter, Write};
 use std::iter;
-use std::ops::{Add, Bound, Index, IndexMut, RangeBounds};
+use std::ops::{Add, Bound, Index, IndexMut, RangeBounds, Sub};
+use itertools::Itertools;
 use thiserror::Error;
-use crate::util::CheckedAdd;
+use crate::util::{CheckedAdd, CheckedSub};
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
 pub enum Direction {
@@ -281,6 +282,48 @@ impl<const N: usize> AsMut<[usize; N]> for UCoordinate<N> {
     }
 }
 
+impl<const N: usize> Add<UCoordinate<N>> for UCoordinate<N> {
+    type Output = Self;
+    fn add(self, rhs: UCoordinate<N>) -> Self::Output {
+        let mut result = self.0.clone();
+        for (target, to_add) in result.iter_mut().zip_eq(rhs.0.iter().copied()) {
+            *target += to_add;
+        }
+        Self(result)
+    }
+}
+
+impl<const N: usize> CheckedAdd<UCoordinate<N>> for UCoordinate<N> {
+    fn checked_add(&self, v: &UCoordinate<N>) -> Option<Self::Output> {
+        let mut result = self.0.clone();
+        for (target, to_add) in result.iter_mut().zip_eq(v.0.iter().copied()) {
+            *target = target.checked_add(to_add)?
+        }
+        Some(Self(result))
+    }
+}
+
+impl<const N: usize> Sub<UCoordinate<N>> for UCoordinate<N> {
+    type Output = Self;
+    fn sub(self, rhs: UCoordinate<N>) -> Self::Output {
+        let mut result = self.0.clone();
+        for (target, to_add) in result.iter_mut().zip_eq(rhs.0.iter().copied()) {
+            *target -= to_add;
+        }
+        Self(result)
+    }
+}
+
+impl<const N: usize> CheckedSub<UCoordinate<N>> for UCoordinate<N> {
+    fn checked_sub(&self, v: &UCoordinate<N>) -> Option<Self::Output> {
+        let mut result = self.0.clone();
+        for (target, to_add) in result.iter_mut().zip_eq(v.0.iter().copied()) {
+            *target = target.checked_sub(to_add)?
+        }
+        Some(Self(result))
+    }
+}
+
 impl<const N: usize> TryFrom<UCoordinate<N>> for ICoordinate<N> {
     type Error = UCoordinate<N>;
     fn try_from(value: UCoordinate<N>) -> Result<Self, Self::Error> {
@@ -456,6 +499,10 @@ impl<T> Grid<T> {
 
     // iter_cols_mut if needed
 
+    pub fn is_in_bounds(&self, coordinate: &UCoordinate<2>) -> bool {
+        (0..self.rows()).contains(&coordinate.0[0]) && (0..self.cols()).contains(&coordinate.0[1])
+    }
+
     pub fn bound_coordinate<'a>(&self, coordinate: &'a mut UCoordinate<2>) -> &'a mut UCoordinate<2> {
         coordinate.bound_axis(0, 0..self.rows()).expect("logic error");
         coordinate.bound_axis(1, 0..self.cols()).expect("logic error");
@@ -466,6 +513,26 @@ impl<T> Grid<T> {
         let mut result = coordinate.checked_add(&direction).unwrap_or(*coordinate);
         self.bound_coordinate(&mut result);
         result
+    }
+
+    pub fn checked_add<U>(&self, coordinate: &UCoordinate<2>, other: &U) -> Option<UCoordinate<2>>
+    where UCoordinate<2>: CheckedAdd<U, Output=UCoordinate<2>> {
+        let result = coordinate.checked_add(other)?;
+        if self.is_in_bounds(&result) {
+            Some(result)
+        } else {
+            None
+        }
+    }
+
+    pub fn checked_sub<U>(&self, coordinate: &UCoordinate<2>, other: &U) -> Option<UCoordinate<2>>
+    where UCoordinate<2>: CheckedSub<U, Output=UCoordinate<2>> {
+        let result = coordinate.checked_sub(other)?;
+        if self.is_in_bounds(&result) {
+            Some(result)
+        } else {
+            None
+        }
     }
 
     pub fn neighbors<'a>(&'a self, coordinate: &UCoordinate<2>) -> impl Iterator<Item=(Direction, UCoordinate<2>)> + 'a {

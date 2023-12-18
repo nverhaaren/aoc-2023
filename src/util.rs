@@ -1,4 +1,4 @@
-use std::ops::Add;
+use std::ops::{Add, Sub};
 
 pub fn parse_number(s: &str) -> u64 {
     s.parse().expect(&format!("number parse issue {s:?}"))
@@ -24,4 +24,8 @@ impl<T> InspectVal for T {}
 
 pub trait CheckedAdd<U>: Add<U> {
     fn checked_add(&self, v: &U) -> Option<Self::Output>;
+}
+
+pub trait CheckedSub<U>: Sub<U> {
+    fn checked_sub(&self, v: &U) -> Option<Self::Output>;
 }
