@@ -1,10 +1,8 @@
-use std::{io, };
+use std::io;
 use std::collections::{HashMap, HashSet};
-use std::fmt::{Display, Write};
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
 use aoc_2023::coordinate::{Direction, Grid, UCoordinate};
-use aoc_2023::util::CheckedAdd;
 
 fn main() {
     let stdin = io::stdin();
@@ -43,8 +41,8 @@ impl PathState {
     pub fn origin_state_b() -> Self {
         Self([
             // South and east allowed turns immediately after the start; this forbids them
-            ((Direction::North, 4), 0),
-            ((Direction::West, 4), 0),
+            ((Direction::North, MIN_STREAK_B), 0),
+            ((Direction::West, MIN_STREAK_B), 0),
         ].iter().copied().collect())
     }
 
