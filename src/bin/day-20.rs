@@ -5,6 +5,7 @@ use std::io::{BufRead, BufReader};
 use std::str::FromStr;
 use anyhow::{anyhow, bail};
 use itertools::Itertools;
+use aoc_2023::graph::CycleInfo;
 
 fn main() {
     let stdin = io::stdin();
@@ -30,6 +31,16 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
     let mut conjunction_idx = 0usize;
     let modules: Vec<_> = specs.iter()
         .map(|spec| {
+            let mut ignored_destinations = 0usize;
+            let destinations = spec.destinations.iter()
+                .filter_map(|x| match name_idx.get(x).copied() {
+                    Some(idx) => Some(idx),
+                    None => {
+                        ignored_destinations += 1;
+                        None
+                    },
+                })
+                .collect();
             Module {
                 kind: spec.kind,
                 state_idx: match spec.kind {
@@ -45,9 +56,8 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
                         result
                     },
                 },
-                destinations: spec.destinations.iter()
-                    .map(|x| name_idx.get(x).copied().unwrap())
-                    .collect()
+                destinations,
+                ignored_destinations,
             }
         })
         .collect();
@@ -70,8 +80,42 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
     };
     let broadcaster_idx = name_idx.get("broadcaster").copied().expect("no broadcaster");
 
-    let (low_sent, high_sent) = push_button(
-        &mut full_state, &modules, &input_maps, broadcaster_idx);
+    let mut low_sent = 0usize;
+    let mut high_sent = 0usize;
+    let cycle = CycleInfo::check_cycle(
+        iter::repeat_with(|| {
+            let ret = full_state.clone();
+            let (low, high) = push_button(
+                &mut full_state, &modules, &input_maps, broadcaster_idx);
+            low_sent += low;
+            high_sent += high;
+            (ret, low, high)
+        }).take(1000)
+    );
+    let cycle = match cycle {
+        Ok(info) => info,
+        Err(_) => {
+            println!("No cycle! Returning so far: {low_sent} {high_sent}.");
+            return low_sent * high_sent;
+        },
+    };
+    low_sent -= cycle.cycle().first().unwrap().1;
+    high_sent -= cycle.cycle().first().unwrap().2;
+    println!("Cycle info: {} {}", cycle.dist_to_cycle_start(), cycle.cycle().len());
+    println!("So far: {low_sent} {high_sent}");
+    assert!(cycle.dist_to_cycle_start() + cycle.cycle().len() <= 1000);
+    let left_to_go = 1000 - cycle.dist_to_cycle_start() - cycle.cycle().len();
+    let cycles_to_go = left_to_go / cycle.cycle().len();
+    let remainder = left_to_go % cycle.cycle().len();
+    for (idx, (_, low, high)) in cycle.cycle().iter().enumerate() {
+        low_sent += low * cycles_to_go;
+        high_sent += high * cycles_to_go;
+        if idx < remainder {
+            low_sent += low;
+            high_sent += high;
+        }
+    }
+    println!("Total: {low_sent} {high_sent}");
     low_sent * high_sent
 }
 
@@ -160,12 +204,14 @@ struct Module {
     kind: ModuleKind,
     state_idx: usize,
     destinations: Vec<usize>,
+    ignored_destinations: usize,
 }
 
 impl Module {
     pub fn kind(&self) -> ModuleKind { self.kind }
     pub fn state_idx(&self) -> usize { self.state_idx }
     pub fn destinations(&self) -> &[usize] { self.destinations.as_slice() }
+    pub fn total_destinations(&self) -> usize { self.destinations.len() + self.ignored_destinations }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
@@ -185,8 +231,8 @@ impl FullState {
                     (module_idx, out_idx, input)
                 }));
                 match input {
-                    Signal::Low => low_sent += module.destinations.len(),
-                    Signal::High => high_sent += module.destinations.len(),
+                    Signal::Low => low_sent += module.total_destinations(),
+                    Signal::High => high_sent += module.total_destinations(),
                 }
             },
             ModuleKind::FlipFlop => {
@@ -200,8 +246,8 @@ impl FullState {
                     Signal::High
                 };
                 match out_signal {
-                    Signal::Low => low_sent += module.destinations.len(),
-                    Signal::High => high_sent += module.destinations.len(),
+                    Signal::Low => low_sent += module.total_destinations(),
+                    Signal::High => high_sent += module.total_destinations(),
                 }
                 out.extend(module.destinations.iter().copied().map(|out_idx| {
                     (module_idx, out_idx, out_signal)
@@ -215,8 +261,8 @@ impl FullState {
                     Signal::High
                 };
                 match out_signal {
-                    Signal::Low => low_sent += module.destinations.len(),
-                    Signal::High => high_sent += module.destinations.len(),
+                    Signal::Low => low_sent += module.total_destinations(),
+                    Signal::High => high_sent += module.total_destinations(),
                 }
                 out.extend(module.destinations.iter().copied().map(|out_idx| {
                     (module_idx, out_idx, out_signal)

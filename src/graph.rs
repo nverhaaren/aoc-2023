@@ -19,7 +19,7 @@ impl<T> CycleInfo<T> {
 }
 
 impl<T: Hash + Eq + Clone> CycleInfo<T> {
-    pub fn check_cycle(it: impl IntoIterator<Item=T>) -> Option<Self> {
+    pub fn check_cycle(it: impl IntoIterator<Item=T>) -> Result<Self, Vec<T>> {
         let mut seen = HashMap::new();
         let mut path = vec![];
         let mut dist_to_cycle_start = 0usize;
@@ -45,9 +45,9 @@ impl<T: Hash + Eq + Clone> CycleInfo<T> {
                 }
             }).for_each(|_| {});
         if found_cycle {
-            Some(CycleInfo { dist_to_cycle_start, cycle: path })
+            Ok(CycleInfo { dist_to_cycle_start, cycle: path })
         } else {
-            None
+            Err(path)
         }
     }
 }
