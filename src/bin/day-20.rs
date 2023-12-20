@@ -77,12 +77,12 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
         Signal::Low,
     ));
 
-    let mut low_sent = 0usize;
+    let mut low_sent = 1usize;  // for broadcaster
     let mut high_sent = 0usize;
     while let Some((source_idx, idx, signal)) = operations.pop_front() {
         let module = &modules[idx];
         let source_map = match module.kind() {
-            ModuleKind::Conjunction => &input_maps[idx],
+            ModuleKind::Conjunction => &input_maps[module.state_idx],
             _ => &empty_map,
         };
         let (low, high) = full_state.process(module, idx,signal, source_idx, source_map, &mut operations);
