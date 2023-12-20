@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::io::{BufRead, BufReader};
 use std::ops::Index;
 use std::str::FromStr;
+use std::time::Instant;
 use itertools::Itertools;
 use regex::Regex;
 use aoc_2023::util::parse_number;
@@ -16,11 +17,12 @@ fn main() {
     let parser = Parser::new();
     let map = parse_rules((&mut lines_iter).map(|s| s.as_str()), &parser)
         .collect();
-    println!(
-        "First part: {}",
-        part_1(&map, parse_parts(lines_iter.map(|s| s.as_str()), &parser))
-    );
-    // println!("Second part: {}", compute_covered(&plans_2));
+    let parts: Vec<_> = parse_parts(lines_iter.map(|s| s.as_str()), &parser).collect();
+    let now = Instant::now();
+    let result = part_1(&map, parts.into_iter());
+    let elapsed = now.elapsed();
+    println!("First part: {result} ({elapsed:.2?})");
+    println!("Second part: {}", part_2(&map));
 }
 
 fn part_1(map: &HashMap<String, Rule>, parts: impl Iterator<Item=Part>) -> u64 {
@@ -38,6 +40,66 @@ fn part_1(map: &HashMap<String, Rule>, parts: impl Iterator<Item=Part>) -> u64 {
         })
         .map(|part| part.total_rating())
         .sum()
+}
+
+fn part_2(map: &HashMap<String, Rule>) -> u64 {
+    let mut x_boundaries = vec![1u64, 4001];
+    let mut m_boundaries = vec![1u64, 4001];
+    let mut a_boundaries = vec![1u64, 4001];
+    let mut s_boundaries = vec![1u64, 4001];
+
+    for rule in map.values() {
+        for (guard, _) in &rule.chain {
+            let value = if guard.less_than {
+                guard.value
+            } else {
+                guard.value + 1
+            };
+            match guard.field {
+                Field::X => x_boundaries.push(value),
+                Field::M => m_boundaries.push(value),
+                Field::A => a_boundaries.push(value),
+                Field::S => s_boundaries.push(value),
+            }
+        }
+    }
+
+    x_boundaries.sort();
+    m_boundaries.sort();
+    a_boundaries.sort();
+    s_boundaries.sort();
+
+    let x_slices = boundaries_to_slices(x_boundaries);
+    let m_slices = boundaries_to_slices(m_boundaries);
+    let a_slices = boundaries_to_slices(a_boundaries);
+    let s_slices = boundaries_to_slices(s_boundaries);
+
+    let mut total = 0;
+    for v in [x_slices, m_slices, a_slices, s_slices].iter().multi_cartesian_product() {
+        let part = Part { x: v[0].0, m: v[1].0, a: v[2].0, s: v[3].0 };
+        let mut next = "in";
+        if loop {
+            let rule = map.get(next).expect("map issue");
+            match rule.destination(&part) {
+                Destination::Accept => break true,
+                Destination::Reject => break false,
+                Destination::Rule(s) => next = s.as_str(),
+            }
+        } {
+            total += v[0].1 * v[1].1 * v[2].1 * v[3].1;
+        }
+    }
+
+    total
+}
+
+fn boundaries_to_slices(v: Vec<u64>) -> Vec<(u64, u64)> {
+    let mut result = vec![];
+    result.reserve_exact(v.len() - 1);
+    for (low, high) in v.into_iter().tuple_windows() {
+        result.push((low, high - low));
+    }
+    result
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
