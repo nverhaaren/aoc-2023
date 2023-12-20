@@ -51,7 +51,6 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
             }
         })
         .collect();
-    let empty_map: HashMap<usize, usize> = HashMap::new();
     let mut input_maps: Vec<_> = iter::repeat_with(|| HashMap::new())
         .take(conjunction_idx)
         .collect();
@@ -69,11 +68,22 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
             .map(|m| vec![Signal::Low; m.len()])
             .collect(),
     };
+    let broadcaster_idx = name_idx.get("broadcaster").copied().expect("no broadcaster");
+
+    let (low_sent, high_sent) = push_button(
+        &mut full_state, &modules, &input_maps, broadcaster_idx);
+    low_sent * high_sent
+}
+
+fn push_button(full_state: &mut FullState, modules: &[Module],
+               input_maps: &Vec<HashMap<usize, usize>>,
+               broadcaster_idx: usize) -> (usize, usize) {
+    let empty_map: HashMap<usize, usize> = HashMap::new();
 
     let mut operations = VecDeque::new();
     operations.push_back((
         usize::MAX,  // ignored
-        name_idx.get("broadcaster").copied().expect("no broadcaster"),
+        broadcaster_idx,
         Signal::Low,
     ));
 
@@ -89,7 +99,7 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
         low_sent += low;
         high_sent += high;
     };
-    low_sent * high_sent
+    (low_sent, high_sent)
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Hash)]
