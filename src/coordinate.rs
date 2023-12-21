@@ -1,5 +1,7 @@
+use std::error::Error;
 use std::fmt::{Display, Formatter, Write};
-use std::iter;
+use std::{io, iter};
+use std::io::{BufRead, BufReader};
 use std::ops::{Add, Bound, Index, IndexMut, RangeBounds, Sub};
 use itertools::Itertools;
 use thiserror::Error;
@@ -585,6 +587,11 @@ impl<T> Grid<T> {
         }
         rotated
     }
+
+    pub fn iter_idxs(&self) -> impl Iterator<Item=UCoordinate<2>> + '_ {
+        (0..self.rows()).cartesian_product(0..self.cols())
+            .map(|(r, c)| (r, c).into())
+    }
 }
 
 impl<T> Index<UCoordinate<2>> for Grid<T> {
@@ -633,6 +640,16 @@ pub enum GridLoadError {
     Empty,
     #[error("all rows must have the same number of columns")]
     Jagged,
+}
+
+pub fn get_byte_grid_from_stdin() -> Result<Grid<u8>, Box<dyn Error>> {
+    let stdin = io::stdin();
+    let reader = BufReader::with_capacity(256, stdin.lock());
+    let lines: Vec<_> = reader.lines()
+        .map(|x| x.map(|s| s.into_bytes()))
+        .try_collect()?;
+    let grid = Grid::try_from_vec_of_vecs(lines)?;
+    Ok(grid)
 }
 
 #[cfg(test)]
