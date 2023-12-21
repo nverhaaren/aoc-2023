@@ -79,6 +79,8 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
             .collect(),
     };
     let broadcaster_idx = name_idx.get("broadcaster").copied().expect("no broadcaster");
+    // In my puzzle only dg outputs to rx, and it only outputs to rx
+    let dg_idx = name_idx.get("dg").copied().unwrap();
 
     let mut low_sent = 0usize;
     let mut high_sent = 0usize;
@@ -86,43 +88,58 @@ fn part_1(specs: &[ModuleSpec]) -> usize {
         iter::repeat_with(|| {
             let ret = full_state.clone();
             let (low, high) = push_button(
-                &mut full_state, &modules, &input_maps, broadcaster_idx);
+                &mut full_state, &modules, &input_maps, broadcaster_idx, dg_idx);
             low_sent += low;
             high_sent += high;
             (ret, low, high)
         }).take(1000)
     );
-    let cycle = match cycle {
-        Ok(info) => info,
-        Err(_) => {
-            println!("No cycle! Returning so far: {low_sent} {high_sent}.");
-            return low_sent * high_sent;
-        },
-    };
-    low_sent -= cycle.cycle().first().unwrap().1;
-    high_sent -= cycle.cycle().first().unwrap().2;
-    println!("Cycle info: {} {}", cycle.dist_to_cycle_start(), cycle.cycle().len());
-    println!("So far: {low_sent} {high_sent}");
-    assert!(cycle.dist_to_cycle_start() + cycle.cycle().len() <= 1000);
-    let left_to_go = 1000 - cycle.dist_to_cycle_start() - cycle.cycle().len();
-    let cycles_to_go = left_to_go / cycle.cycle().len();
-    let remainder = left_to_go % cycle.cycle().len();
-    for (idx, (_, low, high)) in cycle.cycle().iter().enumerate() {
-        low_sent += low * cycles_to_go;
-        high_sent += high * cycles_to_go;
-        if idx < remainder {
-            low_sent += low;
-            high_sent += high;
+    if let Ok(cycle) = cycle {
+        low_sent -= cycle.cycle().first().unwrap().1;
+        high_sent -= cycle.cycle().first().unwrap().2;
+        println!("Cycle info: {} {}", cycle.dist_to_cycle_start(), cycle.cycle().len());
+        println!("So far: {low_sent} {high_sent}");
+        assert!(cycle.dist_to_cycle_start() + cycle.cycle().len() <= 1000);
+        let left_to_go = 1000 - cycle.dist_to_cycle_start() - cycle.cycle().len();
+        let cycles_to_go = left_to_go / cycle.cycle().len();
+        let remainder = left_to_go % cycle.cycle().len();
+        for (idx, (_, low, high)) in cycle.cycle().iter().enumerate() {
+            low_sent += low * cycles_to_go;
+            high_sent += high * cycles_to_go;
+            if idx < remainder {
+                low_sent += low;
+                high_sent += high;
+            }
         }
-    }
-    println!("Total: {low_sent} {high_sent}");
-    low_sent * high_sent
+        println!("Total: {low_sent} {high_sent}");
+        println!("First part: {}", low_sent * high_sent);
+    } else {
+        println!("No cycle! Returning so far: {low_sent} {high_sent}.");
+        println!("First part: {}", low_sent * high_sent);
+    };
+
+
+
+    // let mut full_state = FullState {
+    //     flip_flops: vec![false; flip_flop_idx],
+    //     conjunctions: input_maps.iter()
+    //         .map(|m| vec![Signal::Low; m.len()])
+    //         .collect(),
+    // };
+    // iter::repeat_with(|| {
+    //     let ret = full_state.clone();
+    //     let (low, high) = push_button(
+    //         &mut full_state, &modules, &input_maps, broadcaster_idx);
+    //     (ret, low, high)
+    // }).take(1000)
+    0
 }
 
 fn push_button(full_state: &mut FullState, modules: &[Module],
                input_maps: &Vec<HashMap<usize, usize>>,
-               broadcaster_idx: usize) -> (usize, usize) {
+               broadcaster_idx: usize, _dg_idx: usize) -> (usize, usize) {
     let empty_map: HashMap<usize, usize> = HashMap::new();
+    // let mut rx_sends = 0usize;
 
     let mut operations = VecDeque::new();
     operations.push_back((

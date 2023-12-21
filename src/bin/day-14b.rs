@@ -26,7 +26,7 @@ fn process_lines(lines: impl Iterator<Item=String>) -> usize {
         // Prevent infinite memory
         spin_forever(orig_grid).take(1000)
     );
-    println!("Cycle? {:?}", possible_cycle.is_some());
+    println!("Cycle? {:?}", possible_cycle.is_ok());
     let cycle_info: CycleInfo<Grid<u8>> = possible_cycle.unwrap();
     println!("{} {}", cycle_info.dist_to_cycle_start(), cycle_info.cycle().len());
     let idx_within_cycle = (3_999_999_999usize - cycle_info.dist_to_cycle_start())
