@@ -1,11 +1,7 @@
-use std::{io, iter, mem, str};
+use std::mem;
 use std::collections::HashMap;
 use std::error::Error;
-use std::hash::Hash;
-use std::io::{BufRead, BufReader};
-use std::str::FromStr;
 use anyhow::anyhow;
-use itertools::Itertools;
 use aoc_2023::coordinate::{get_byte_grid_from_stdin, Grid, UCoordinate};
 
 type Point = UCoordinate<2>;

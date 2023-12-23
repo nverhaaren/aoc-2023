@@ -1,6 +1,6 @@
-use std::{io, iter, mem, str};
+use std::{iter, str};
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 use std::error::Error;
 use std::hash::Hash;
 use std::str::FromStr;
@@ -23,11 +23,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lines = get_lines_from_stdin()?;
     let blocks = FromStrParser::<Block>::new()
         .parse_lines_to_vec(lines.iter().map(|s| s.as_str()))?;
-    println!("Part 1: {}", part_1(&blocks));
+    parts(&blocks);
     Ok(())
 }
 
-fn part_1(blocks: &[Block]) -> usize {
+fn parts(blocks: &[Block]) -> () {
     let mut sections: HashMap<Point2, Vec<_>> = HashMap::new();
     for (idx, block) in blocks.iter().enumerate() {
         for shadow in block.shadow() {
@@ -111,7 +111,48 @@ fn part_1(blocks: &[Block]) -> usize {
 
     assert_eq!(moved_count, blocks.len());
 
-    can_destroy.len()
+    println!("Part 1: {}", can_destroy.len());
+
+    let moved_blocks = moved_blocks;
+
+    let mut sum = 0usize;
+
+    for idx in 0..blocks.len() {
+        // Shadow for this episode
+        let mut moved_blocks = moved_blocks.clone();
+
+        moved_blocks.remove(&idx);
+        let mut to_check = BinaryHeap::new();
+        to_check.extend(above.get(&idx).unwrap_or(&empty).iter().copied().map(|idx| {
+            let bottom = moved_blocks.get(&idx).unwrap().bottom() as isize;
+            (-bottom, idx)
+        }));
+
+        while let Some((entered_bottom, check)) = to_check.pop() {
+            let block = moved_blocks.get(&check).unwrap();
+            let bottom = block.bottom();
+            if (-entered_bottom) as usize != bottom {  // It could have already fallen
+                assert!((-entered_bottom as usize) > bottom);
+                continue;
+            }
+            let max_top = below.get(&check).unwrap_or(&empty).iter().copied()
+                .map(|below_idx| moved_blocks.get(&below_idx).map(|block| block.top()).unwrap_or(0))
+                .max().unwrap_or(0);
+            let movement = bottom.saturating_sub(max_top + 1);
+            if movement == 0 {
+                continue;
+            }
+            sum += 1;
+            let block = moved_blocks.get_mut(&check).unwrap();
+            block.lower(movement);
+            to_check.extend(above.get(&check).unwrap_or(&empty).iter().copied().map(|idx| {
+                let bottom = moved_blocks.get(&idx).unwrap().bottom() as isize;
+                (-bottom, idx)
+            }));
+        }
+    }
+
+    println!("Part two: {sum}");
 }
 
 impl Block {
