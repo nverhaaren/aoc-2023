@@ -8,6 +8,8 @@ use crate::util::{CheckedAdd, CheckedSub};
 use thiserror;
 use super::{Direction, UCoordinate};
 
+pub type Point = UCoordinate<2>;
+
 #[derive(Clone, Eq, PartialEq, Debug, Hash)]
 pub struct Grid<T> {
     data: Vec<Vec<T>>,
@@ -168,6 +170,39 @@ impl<T> Grid<T> {
     pub fn iter_idxs(&self) -> impl Iterator<Item=UCoordinate<2>> + '_ {
         (0..self.rows()).cartesian_product(0..self.cols())
             .map(|(r, c)| (r, c).into())
+    }
+
+    /// Walk until you reach a fork or a dead end - return stopping point and number of steps to get
+    /// there. Will run forever if started within a loop.
+    pub fn follow_path(
+        &self,
+        start: &Point,
+        entry_direction: Direction,
+        mut is_path: impl FnMut(&Point, &T) -> bool
+    ) -> (Point, Direction, usize) {
+        let mut current = *start;
+        let mut from_direction = entry_direction;
+        let mut distance = 0usize;
+        loop {
+            let mut next = None;
+            for (dir, point) in self.neighbors(&current) {
+                if dir == from_direction.opposite() || !is_path(&point, &self[point]) {
+                    continue
+                }
+                match next.replace((dir, point)) {
+                    Some(_) => return (current, from_direction, distance),
+                    None => (),
+                }
+            }
+            match next {
+                None => return (current, from_direction, distance),
+                Some((next_dir, next_point)) => {
+                    current = next_point;
+                    from_direction = next_dir;
+                    distance += 1;
+                },
+            }
+        }
     }
 }
 
