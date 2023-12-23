@@ -1,6 +1,6 @@
 pub mod grid;
 
-use std::ops::{Add, Bound, RangeBounds, Sub};
+use std::ops::{Add, Bound, Deref, DerefMut, RangeBounds, Sub};
 use itertools::Itertools;
 use crate::util::{CheckedAdd, CheckedSub};
 
@@ -155,6 +155,19 @@ impl<const N: usize> ICoordinate<N> {
     }
 }
 
+impl<const N: usize> Deref for ICoordinate<N> {
+    type Target = [isize; N];
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl<const N: usize> DerefMut for ICoordinate<N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
 impl<const N: usize> Default for ICoordinate<N> {
     fn default() -> Self {
         Self::origin()
@@ -170,18 +183,6 @@ impl<const N: usize> From<[isize; N]> for ICoordinate<N> {
 impl<const N: usize> From<ICoordinate<N>> for [isize; N] {
     fn from(value: ICoordinate<N>) -> Self {
         value.0
-    }
-}
-
-impl<const N: usize> AsRef<[isize; N]> for ICoordinate<N> {
-    fn as_ref(&self) -> &[isize; N] {
-        &self.0
-    }
-}
-
-impl<const N: usize> AsMut<[isize; N]> for ICoordinate<N> {
-    fn as_mut(&mut self) -> &mut [isize; N] {
-        &mut self.0
     }
 }
 
@@ -280,14 +281,15 @@ impl<const N: usize> From<UCoordinate<N>> for [usize; N] {
     }
 }
 
-impl<const N: usize> AsRef<[usize; N]> for UCoordinate<N> {
-    fn as_ref(&self) -> &[usize; N] {
+impl<const N: usize> Deref for UCoordinate<N> {
+    type Target = [usize; N];
+    fn deref(&self) -> &Self::Target {
         &self.0
     }
 }
 
-impl<const N: usize> AsMut<[usize; N]> for UCoordinate<N> {
-    fn as_mut(&mut self) -> &mut [usize; N] {
+impl<const N: usize> DerefMut for UCoordinate<N> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
