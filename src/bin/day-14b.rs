@@ -121,7 +121,7 @@ O..#.OO...
 #....###..
 #....#....".lines()
             .map(|s| s.as_bytes().to_vec())
-            .collect();
+            .collect::<Vec<_>>().try_into().unwrap();
         assert_eq!(north_load(&grid), 136);
     }
 }

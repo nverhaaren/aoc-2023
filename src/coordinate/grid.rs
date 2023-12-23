@@ -171,6 +171,13 @@ impl<T> Grid<T> {
     }
 }
 
+impl<T> TryFrom<Vec<Vec<T>>> for Grid<T> {
+    type Error = GridLoadError;
+    fn try_from(value: Vec<Vec<T>>) -> Result<Self, Self::Error> {
+        Self::try_from_vec_of_vecs(value)
+    }
+}
+
 impl<T> Index<UCoordinate<2>> for Grid<T> {
     type Output = T;
 

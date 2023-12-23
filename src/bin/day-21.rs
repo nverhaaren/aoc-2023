@@ -49,9 +49,3 @@ fn part_1(grid: &Grid<u8>, starting_position: Point) -> usize {
         })
         .count()
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-}

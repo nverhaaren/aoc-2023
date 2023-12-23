@@ -234,9 +234,3 @@ fn jump_neighbors<'a>(grid: &'a Grid<usize>, coordinate: &UCoordinate<2>) -> imp
             }.map(|coord| (d, coord))
         })
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-}

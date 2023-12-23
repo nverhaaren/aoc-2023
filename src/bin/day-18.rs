@@ -71,8 +71,3 @@ impl Plan {
         Self { direction, length }
     }
 }
-#[cfg(test)]
-mod test {
-    use super::*;
-
-}

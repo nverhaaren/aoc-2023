@@ -146,9 +146,3 @@ fn possible_entry_points(rows: usize, cols: usize) -> impl Iterator<Item=(UCoord
             .map(move |col| ((rows - 1, col).into(), Direction::North))
         )
 }
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-}
