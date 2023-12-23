@@ -1,6 +1,6 @@
 use std::io;
 use std::io::{BufRead, BufReader};
-use aoc_2023::coordinate::Grid;
+use aoc_2023::coordinate::grid::Grid;
 
 fn main() {
     let stdin = io::stdin();

@@ -2,7 +2,8 @@ use std::io;
 use std::collections::{HashMap, HashSet};
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
-use aoc_2023::coordinate::{Direction, Grid, UCoordinate};
+use aoc_2023::coordinate::{Direction, UCoordinate};
+use aoc_2023::coordinate::grid::Grid;
 
 fn main() {
     let stdin = io::stdin();

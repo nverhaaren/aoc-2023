@@ -2,7 +2,8 @@ use std::mem;
 use std::collections::HashMap;
 use std::error::Error;
 use anyhow::anyhow;
-use aoc_2023::coordinate::{get_byte_grid_from_stdin, Grid, UCoordinate};
+use aoc_2023::coordinate::UCoordinate;
+use aoc_2023::coordinate::grid::{get_byte_grid_from_stdin, Grid};
 
 type Point = UCoordinate<2>;
 

@@ -1,6 +1,6 @@
 use std::{io, iter, mem};
 use std::io::{BufRead, BufReader};
-use aoc_2023::coordinate::Grid;
+use aoc_2023::coordinate::grid::Grid;
 use aoc_2023::graph::CycleInfo;
 
 fn main() {

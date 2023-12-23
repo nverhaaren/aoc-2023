@@ -3,7 +3,8 @@ use std::collections::VecDeque;
 use std::fmt::{Display, Formatter, Write};
 use std::io::{BufRead, BufReader};
 use itertools::Itertools;
-use aoc_2023::coordinate::{Direction, Grid, UCoordinate};
+use aoc_2023::coordinate::{Direction, UCoordinate};
+use aoc_2023::coordinate::grid::Grid;
 use aoc_2023::util::CheckedAdd;
 
 fn main() {
