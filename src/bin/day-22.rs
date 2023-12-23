@@ -12,6 +12,9 @@ use aoc_2023::util::{FromStrParser, get_lines_from_stdin, Parser};
 type Point = UCoordinate<3>;
 type Point2 = UCoordinate<2>;
 
+// Useful in the future - ranges for Coordinate<N> that represent N-dimensional spaces
+// Maybe a typed projection mechanism for both coordinates and these ranges?
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 struct Block {
     start: Point,
