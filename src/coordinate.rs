@@ -386,6 +386,32 @@ impl CheckedAdd<Direction> for UCoordinate<2> {
     }
 }
 
+impl Sub<Direction> for UCoordinate<2> {
+    type Output = UCoordinate<2>;
+    fn sub(self, rhs: Direction) -> Self::Output {
+        let [row, col] = self.0;
+        match rhs {
+            Direction::North => Self([row + 1, col]),
+            Direction::East => Self([row, col - 1]),
+            Direction::South => Self([row - 1, col]),
+            Direction::West => Self([row, col + 1]),
+        }
+    }
+}
+
+impl CheckedSub<Direction> for UCoordinate<2> {
+    fn checked_sub(&self, v: &Direction) -> Option<Self::Output> {
+        let [row, col] = self.0;
+        let v = *v;
+        Some(match v {
+            Direction::North => Self([row.checked_add(1)?, col]),
+            Direction::East => Self([row, col.checked_sub(1)?]),
+            Direction::South => Self([row.checked_sub(1)?, col]),
+            Direction::West => Self([row, col.checked_add(1)?]),
+        })
+    }
+}
+
 pub fn twice_shoelace(it: impl Iterator<Item=ICoordinate<2>> + Clone + ExactSizeIterator) -> usize {
     // TODO: without using circular windows I suspect I can relax these bounds - have a single
     // iteration cover shoelace, boundary, and pick?
